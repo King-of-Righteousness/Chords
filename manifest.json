@@ -1,7 +1,7 @@
 {
     "name": "KOR Worship Music",
     "short_name": "Worship-Chords",
-    "start_url": "./Reader.html",
+    "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#0d9488",
