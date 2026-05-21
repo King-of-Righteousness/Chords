@@ -1,0 +1,1271 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+  <meta charset="utf-8" /> 
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0" /> 
+  <title>KOR | Worship Reader (Hybrid)</title> 
+  <script src="https://cdn.tailwindcss.com"></script> 
+  <style> 
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@500;700&family=Playfair+Display:wght@700;900&display=swap');
+/* This rule applies ONLY to Desktop screens */
+    @media (min-width: 1024px) {
+        body {
+            zoom: 75%; 
+            width: 133.33vw !important;
+            height: 133.33vh !important;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+    }
+
+    /* This rule applies ONLY to Mobile/Tablets so it stays readable */
+    @media (max-width: 1023px) {
+        body {
+            zoom: 100%; 
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+    }
+
+    :root { 
+      /* --- READER THEME (Original) --- */
+      --bg: #0f172a;       
+      --panel: #1e293b;    
+      --dock-bg: rgba(30, 41, 59, 0.95);
+      --nav-bg: rgba(15, 23, 42, 0.9);
+      --text: #f1f5f9;     
+      --text-muted: #94a3b8; 
+      --chord: #f87171;    
+      --accent: #3b82f6;   
+      --section: #10b981;  
+      --border: rgba(255, 255, 255, 0.1);
+      --input-bg: #1e293b;
+
+      /* --- PRINT THEME (Independent) --- */
+      --print-text-size: 12pt; 
+      --print-chord-size: 14pt; 
+      --print-line-height: 1.35; 
+      --print-col-gap: 40px; 
+      --bg-preview: #f1f5f9;
+      --panel-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --font-header: 'Playfair Display', serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-ui: 'Inter', sans-serif;
+      --print-chord-color: #b91c1c; 
+    }
+    
+    .light {
+      --bg: #f8fafc;       
+      --panel: #ffffff;
+      --dock-bg: rgba(255, 255, 255, 0.95);
+      --nav-bg: rgba(248, 250, 252, 0.9);
+      --text: #0f172a;     
+      --text-muted: #64748b; 
+      --chord: #dc2626;    
+      --accent: #2563eb;   
+      --section: #059669;  
+      --border: #e2e8f0;
+      --input-bg: #f1f5f9;
+    }
+ 
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); -webkit-tap-highlight-color: transparent; overflow-x: hidden; transition: background-color 0.3s ease, color 0.3s ease; } 
+    
+    /* --- RESTORED READER CSS (Strictly from Reader.txt) --- */
+    .reader { 
+      font-family: 'JetBrains Mono', monospace; 
+      font-variant-ligatures: none; 
+      white-space: pre !important; /* CRITICAL FOR CHORD ALIGNMENT */
+      line-height: 1.8; 
+    } 
+    
+    .reader-line {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      min-height: 1.8em;
+    }
+ 
+    .chord { 
+      color: var(--chord); 
+      font-weight: 700; 
+      font-family: 'JetBrains Mono', monospace; 
+    } 
+ 
+    .section-label { 
+      color: var(--section); 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      font-size: 0.85em; 
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.2); 
+      display: inline-block;
+      margin-top: 1em;
+      margin-bottom: 0.2em;
+    } 
+
+    /* UI COMPONENTS */
+    .glass-nav { background: var(--nav-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); transition: background-color 0.3s ease, border-color 0.3s ease; } 
+    .float-dock { background: var(--dock-bg); border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); transition: background-color 0.3s ease, border-color 0.3s ease; }
+    .theme-btn { background-color: transparent; color: var(--text-muted); transition: color 0.3s ease, background-color 0.3s ease; }
+    .theme-btn:hover { background-color: var(--border); color: var(--text); }
+    .theme-input { background-color: var(--input-bg); border: 1px solid var(--border); color: var(--text); }
+    @media (min-width: 900px) { .two-col { column-count: 2; column-gap: 40px; column-rule: 1px solid var(--border); } } 
+    @keyframes korPulse{ 0%{transform:scale(1);box-shadow:0 0 0 rgba(59,130,246,0)} 50%{transform:scale(1.05);box-shadow:0 0 20px rgba(59,130,246,0.3)} 100%{transform:scale(1);box-shadow:0 0 0 rgba(59,130,246,0)} } 
+    .korLogo { width: 40px; height: 40px; border-radius: 10px; background: var(--panel); display: grid; place-items: center; animation: korPulse 3s ease-in-out infinite; border: 1px solid var(--border); overflow: hidden; } 
+    .korLogo img { width: 100%; height: 100%; border-radius: 8px; display: block; object-fit: cover; }
+    
+    .songCard { background: var(--panel); border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+    .setlistRow { display: flex; align-items: center; width: 100%; gap: 10px; }
+    .btnGroup { margin-left: auto; display: flex; gap: 4px; }
+    .moveBtn, .removeBtn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--border); cursor: pointer; }
+    .removeBtn { background: #7f1d1d; color: #fca5a5; border: none; }
+    .theme-panel { background-color: var(--panel); border: 1px solid var(--border); color: var(--text); }
+    .key-btn { height: 36px; border-radius: 6px; background: var(--bg); color: var(--text); font-weight: bold; border: 1px solid var(--border); }
+    .key-btn.active { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+    #statusOverlay { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .light #statusOverlay { background: rgba(255, 255, 255, 0.95); }
+    .family-pill { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 30px; }
+    .family-degree { font-size: 8px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
+    .family-chord { font-weight: 800; font-size: 13px; color: var(--text); white-space: nowrap; }
+    .family-chord.primary { color: var(--accent); }
+    .family-chord.dim { color: var(--text-muted); font-weight: normal; }
+
+    /* --- ISOLATED PRINT VIEW STYLES (Does not affect Reader) --- */
+    #printOverlay {
+        position: fixed; inset: 0; z-index: 2000;
+        background-color: var(--bg-preview);
+        color: #0f172a;
+        overflow: auto;
+        display: none; /* Hidden by default */
+        font-family: var(--font-ui);
+    }
+    #printOverlay.open { display: block; }
+
+    .print-wrap { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding: 20px; }
+    
+    .print-topbar { 
+        background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 16px; 
+        padding: 12px 20px; display:flex; gap: 16px; align-items:center; justify-content:space-between; flex-wrap:wrap; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); position: sticky; top: 20px; z-index: 50;
+    }
+    
+    /* Interactive Badges */
+    .meta-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .control-badge { 
+        font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: #475569; 
+        border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center;
+    }
+    .badge-label { padding: 4px 8px; background: #e2e8f0; color: #475569; }
+    .badge-val { padding: 4px 8px; min-width: 30px; text-align: center; background: #fff; color: #0f172a; }
+    .badge-btn { 
+        padding: 4px 8px; cursor: pointer; background: #fff; border-left: 1px solid #e2e8f0; 
+        transition: background 0.1s; font-weight: 900; user-select: none;
+    }
+    .badge-btn:hover { background: #f8fafc; color: #3b82f6; }
+    
+    .print-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .p-btn { border:0; border-radius: 8px; padding: 10px 16px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; } 
+    .p-btn-primary { background:#3b82f6; color:#fff; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); } 
+    .p-btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+    .p-btn-sec { background: #fff; color:#475569; border: 1px solid #cbd5e1; } 
+    .p-btn-sec:hover { background: #f8fafc; color: #1e293b; }
+
+    /* Print Preview Areas */
+    .sheet-container { display: flex; justify-content: center; }
+    .preview-scroll { width: 100%; max-height: 80vh; overflow: auto; background: #e2e8f0; border-radius: 12px; padding: 40px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+    .print-wrap:not(.onepage) .preview-scroll { background: var(--panel-bg); padding: 20px; border: 1px solid var(--border-color); }
+    .page-preview { width: 210mm; min-height: 297mm; margin: 0 auto; background:#fff; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 15mm; overflow: hidden; position: relative; }
+    
+    /* Print Header */
+    .print-header { display:none; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 2px solid #000; color:#000; }
+    .print-header .ph-title { font-family: var(--font-header); font-size: 24pt; font-weight: 900; line-height: 1.1; margin-bottom: 4px; }
+    .print-header .ph-sub { font-family: var(--font-ui); font-size: 10pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #444; }
+    
+    /* Print Reader Styles (Isolated) */
+    .print-reader { 
+        font-family: var(--font-mono); 
+        white-space: pre-wrap; 
+        font-size: var(--print-text-size); 
+        line-height: var(--print-line-height); 
+        color: #000 !important; 
+        width:100%; 
+    }
+    
+    /* Replicate structure for Print context */
+    .print-reader .reader-line { 
+        display:block; 
+        break-inside: avoid; 
+        page-break-inside: avoid; 
+        white-space: pre-wrap; 
+        margin-bottom: 0.2em;
+    }
+    
+    .print-reader .chord { 
+        color: var(--print-chord-color) !important; 
+        font-weight: 700; 
+        font-size: var(--print-chord-size); 
+        font-family: var(--font-mono); 
+        display: inline-block; 
+        margin-right: 0.3ch;
+    }
+    
+    .print-reader .section-label { 
+        color:#000 !important; 
+        font-weight: 800; 
+        text-transform: uppercase; 
+        font-size: 0.8em; 
+        letter-spacing: 0.05em; 
+        display: inline-block; 
+        margin-top: 1.5em; 
+        border-bottom: 1px solid #ccc;
+        margin-bottom: 0.5em;
+    }
+
+    /* Print Columns */
+    .cols1 .print-reader { column-count:1; column-gap: var(--print-col-gap); } 
+    .cols2 .print-reader { column-count:2; column-gap: var(--print-col-gap); } 
+    .cols3 .print-reader { column-count:3; column-gap: 34px; } 
+    .onepage .print-reader { column-count: 2 !important; column-gap: var(--print-col-gap) !important; }
+
+    #pageBox { display: none; }
+    .onepage #pageBox { display: block; }
+    .onepage #scrollBox { display: none; }
+    .onepage .print-header { display:block; }
+
+    /* Toggle Switch */
+    .toggle-label { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+    .toggle-label:has(input:checked) { background: #eff6ff; border-color: #bfdbfe; box-shadow: 0 0 0 2px #dbeafe; }
+    .toggle-label span { font-weight: 700; font-size: 0.85rem; color: #475569; }
+    .toggle-label:has(input:checked) span { color: #1e40af; }
+
+    @page { size: A4; margin: 10mm; } 
+ 
+    @media print { 
+        body > *:not(#printOverlay) { display: none !important; }
+        #printOverlay { display: block !important; position: absolute; background: white; overflow: visible; }
+        .print-topbar, .print-actions { display:none !important; } 
+        #scrollBox { display:none !important; } 
+        #pageBox { display:block !important; box-shadow:none; padding:0; width:100%; height:auto; margin:0; overflow: visible; } 
+        .print-header { display:block !important; } 
+        .print-reader { color:#000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } 
+        .print-reader .chord { color: #b91c1c !important; } 
+    } 
+  </style> 
+</head> 
+<body class="min-h-screen pb-32"> 
+
+<div id="statusOverlay" class="fixed top-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full z-[100] transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-3 transform -translate-y-2">
+  <div id="statusSpinner" class="w-4 h-4 rounded-full border-2 border-t-transparent border-blue-500 animate-spin"></div>
+  <span id="statusText" class="text-xs font-bold font-mono tracking-widest text-blue-400">LOADING...</span>
+</div>
+ 
+<nav class="w-full glass-nav sticky top-0 z-50 h-16 flex items-center justify-between px-3 sm:px-6 gap-2"> 
+  
+  <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0"> 
+    <div class="korLogo shrink-0"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" class="w-6 h-6 rounded" alt="K" /></div> 
+    <div class="leading-none flex-1 min-w-0"> 
+      <h1 id="titleEl" class="text-xs sm:text-sm font-black uppercase tracking-tight truncate">Loading...</h1> 
+      <p id="artistEl" class="text-[9px] sm:text-[10px] font-bold truncate" style="color: var(--text-muted)"></p> 
+    </div> 
+  </div> 
+   
+  <div class="flex items-center gap-1.5 sm:gap-2 shrink-0"> 
+    <div id="syncStatus" class="hidden md:block text-[9px] font-bold uppercase tracking-widest" style="color: var(--text-muted)"></div> 
+    
+    <a href="./Reader.html" class="theme-input px-2 sm:px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase transition hover:opacity-80 flex items-center gap-1 whitespace-nowrap shrink-0" style="color: var(--section); border-color: var(--section); text-decoration: none;">
+      🎸Friday Service
+    </a>
+
+    <button id="openSetlistBtn" class="theme-input px-2 sm:px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase transition hover:opacity-80 whitespace-nowrap shrink-0" style="color: var(--accent); border-color: var(--accent)">
+      Setlist
+    </button> 
+  </div> 
+</nav>
+ 
+<main class="max-w-7xl mx-auto px-4 sm:px-8 py-6"> 
+
+<div class="mb-4 flex flex-wrap items-center justify-between gap-4 border-b pb-4 relative" style="border-color: var(--border)"> 
+    <div class="flex items-center gap-2 flex-1 w-full sm:max-w-2xl relative"> 
+      
+      <input type="text" id="searchInput" placeholder="Search..." class="theme-input rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 w-1/3 sm:w-48 transition-all" autocomplete="off" />
+      
+      <div id="searchSuggestions" class="absolute top-full left-0 mt-2 w-full sm:w-96 theme-panel border rounded-xl shadow-2xl z-[100] hidden max-h-64 overflow-y-auto" style="border-color: var(--border)"></div>
+
+      <select id="songSelect" class="theme-input rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-0"></select> 
+
+    </div> 
+
+    <button id="keyDisplayBtn" class="text-xs font-bold transition hover:opacity-70 flex items-center gap-1 ml-auto" style="color: var(--text-muted)" title="Change Key"> 
+      Key: <span id="transKeyEl" class="font-black px-2 py-1 rounded theme-input" style="color: var(--accent)">—</span> 
+    </button> 
+  </div>
+
+  <div id="mainFamilyDisplay" class="flex items-center justify-between sm:justify-center gap-2 sm:gap-6 pb-2"></div>
+  <div id="capoDisplay" class="mb-6 flex flex-col sm:flex-row items-center justify-center text-xs font-mono font-bold tracking-wider opacity-90 pb-2 border-b gap-1 sm:gap-4 text-center" style="border-color: rgba(255,255,255,0.05); color: var(--accent);"></div>
+  <div id="reader" class="reader text-lg sm:text-xl"></div> 
+</main> 
+ 
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 float-dock rounded-2xl flex items-center p-1.5 sm:p-2 gap-1 sm:gap-2 z-50 transition-opacity duration-300" id="floatDock"> 
+  <button id="prevSongBtn" class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl font-bold theme-btn">⟨</button>
+  <button id="nextSongBtn" class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl font-bold theme-btn">⟩</button>
+  <div class="w-px h-8 mx-1 hidden sm:block" style="background: var(--border)"></div> 
+  <button id="fontMinusBtn" class="w-12 h-12 hidden sm:flex items-center justify-center rounded-xl font-bold theme-btn">A-</button> 
+  <div class="w-px h-8 mx-1 hidden sm:block" style="background: var(--border)"></div> 
+  <button id="fontPlusBtn" class="w-12 h-12 hidden sm:flex items-center justify-center rounded-xl font-bold theme-btn">A+</button> 
+  <div class="w-px h-8 mx-1 hidden sm:block" style="background: var(--border)"></div> 
+  <button id="colsToggleBtn" class="w-12 h-12 hidden sm:flex items-center justify-center rounded-xl text-xs font-black theme-btn">1 | 2</button> 
+  <div class="w-px h-8 mx-1 hidden sm:block" style="background: var(--border)"></div> 
+  <button id="themeToggleBtn" class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl text-lg theme-btn">🌙</button> 
+  <div class="w-px h-8 mx-1 hidden sm:block" style="background: var(--border)"></div> 
+  <button id="gearBtn" class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl theme-btn">⚙️</button> 
+</div> 
+ 
+<div id="setlistModal" class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden"> 
+  <div class="w-full max-w-xl theme-panel rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"> 
+    <div class="p-6 border-b flex justify-between items-center" style="background: var(--panel); border-color: var(--border)"> 
+      <div>
+        <h3 class="font-black uppercase text-sm tracking-widest" style="color: var(--text)">Worship Arrangement</h3> 
+        <div class="text-[10px] font-bold mt-1" style="color: var(--text-muted)" id="setlistStats"></div>
+      </div>
+      <button id="xCloseSetlistBtn" class="hover:opacity-70 transition" style="color: var(--text-muted)">✕</button> 
+    </div> 
+    <div class="flex-1 overflow-y-auto p-4 space-y-2" id="setlistList" style="background: var(--bg)"></div> 
+    <div class="p-6 flex gap-3 border-t" style="background: var(--panel); border-color: var(--border)"> 
+      <button id="cancelSetlistBtn" class="flex-1 py-3 font-bold text-sm hover:opacity-80 rounded-xl transition theme-btn" style="border: 1px solid var(--border)">Cancel</button> 
+      <button id="saveSetlistBtn" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-black text-sm text-white transition shadow-lg shadow-blue-900/20" style="background-color: var(--accent)">Save Arrangement</button> 
+    </div> 
+  </div> 
+</div> 
+ 
+<div id="gearPanel" class="fixed bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-md theme-panel rounded-2xl p-6 shadow-2xl hidden z-[55]"> 
+  <div class="sm:hidden mb-6 border-b pb-6" style="border-color: var(--border)">
+      <h3 class="text-xs font-black uppercase tracking-widest mb-4" style="color: var(--text-muted)">Display</h3>
+      <div class="flex gap-2">
+          <button class="flex-1 py-3 rounded-xl font-bold text-sm theme-btn font-minus-mobile" style="border: 1px solid var(--border)">A-</button>
+          <button class="flex-1 py-3 rounded-xl font-bold text-sm theme-btn font-plus-mobile" style="border: 1px solid var(--border)">A+</button>
+          <button class="flex-1 py-3 rounded-xl font-bold text-xs theme-btn cols-toggle-mobile" style="border: 1px solid var(--border)">1 | 2</button>
+      </div>
+  </div>
+  <h3 class="text-xs font-black uppercase tracking-widest mb-4" style="color: var(--text-muted)">Transposition</h3> 
+  <div id="keyRow" class="grid grid-cols-6 gap-2 mb-6"></div> 
+  <div id="gearFamilyContainer" class="mb-6 p-4 rounded-xl border flex flex-col items-center" style="background-color: var(--input-bg); border-color: var(--border);">
+     <div class="text-[10px] font-black uppercase tracking-widest mb-3" style="color: var(--text-muted)">Key Chord Family</div>
+     <div id="gearFamilyDisplay" class="flex justify-between w-full"></div>
+  </div>
+  <button id="openPrintBtn" class="w-full mb-3 py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 theme-btn" style="border: 1px solid var(--border)">
+      🖨️ Open Print View
+  </button>
+  <button id="closeBtn" class="w-full py-3 rounded-xl font-bold text-sm transition theme-btn" style="background: var(--bg); border: 1px solid var(--border)">Close Settings</button> 
+</div> 
+
+<div id="printOverlay">
+  <div class="print-wrap cols1" id="printWrap">
+    <div class="print-topbar">
+      <div>
+        <h1 id="phTitleMain" style="margin:0; font-size:1.25rem; font-weight:800;">Print View</h1>
+        
+        <div class="meta-badges mt-2">
+          <div class="control-badge">
+             <div class="badge-label">Key</div>
+             <div class="badge-val" id="phKeyEl">—</div>
+          </div>
+          
+          <div class="control-badge">
+             <div class="badge-label">Cols</div>
+             <div class="badge-val" id="phColsEl">1</div>
+             <div class="badge-btn" onclick="cyclePrintCols()">↺</div>
+          </div>
+
+          <div class="control-badge">
+             <div class="badge-label">Font</div>
+             <div class="badge-btn" onclick="adjustPrintFont(-1)">-</div>
+             <div class="badge-val" id="phFontEl">12pt</div>
+             <div class="badge-btn" onclick="adjustPrintFont(1)">+</div>
+          </div>
+        </div>
+      </div>
+
+<div class="print-actions">
+        <div style="display:flex; gap: 8px; margin-right: 8px;">
+            <button class="p-btn p-btn-sec" onclick="printPrevSong()" id="printPrevBtn" style="padding: 8px 14px; display: flex; align-items: center; gap: 6px;" title="Previous Song">
+                <span style="font-size: 1.2em; line-height: 1;">⟨</span> Previous
+            </button>
+            <button class="p-btn p-btn-sec" onclick="printNextSong()" id="printNextBtn" style="padding: 8px 14px; display: flex; align-items: center; gap: 6px;" title="Next Song">
+                Next <span style="font-size: 1.2em; line-height: 1;">⟩</span>
+            </button>
+        </div>
+        
+        <label class="toggle-label">
+          <input id="onePageToggle" type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+          <span>One-page A4</span>
+        </label>
+        <button class="p-btn p-btn-sec" onclick="closePrintView()">Back</button>
+        <button class="p-btn p-btn-primary" onclick="triggerNativePrint()">Print PDF</button>
+      </div>
+    </div>
+
+    <div class="sheet-container">
+      <div id="pageBox" class="page-preview">
+        <div class="print-header">
+          <div class="ph-title" id="printTitlePage">Song Title</div>
+          <div class="ph-sub" id="printSubPage">Artist • Key: C</div>
+        </div>
+        <div id="printReaderPage" class="print-reader"></div>
+      </div>
+
+      <div id="scrollBox" class="preview-scroll">
+        <div id="printReaderScroll" class="print-reader"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script> 
+/* =========================
+   Reader — Firebase-Only Edition
+========================= */
+
+// --- MUSIC THEORY ENGINE ---
+const KEY_FAMILIES = {
+    "C":  ["C", "Dm", "Em", "F", "G", "Am", "Bdim"], "Db": ["Db", "Ebm", "Fm", "Gb", "Ab", "Bbm", "Cdim"], "C#": ["Db", "Ebm", "Fm", "Gb", "Ab", "Bbm", "Cdim"], 
+    "D":  ["D", "Em", "F#m", "G", "A", "Bm", "C#dim"], "Eb": ["Eb", "Fm", "Gm", "Ab", "Bb", "Cm", "Ddim"], "D#": ["Eb", "Fm", "Gm", "Ab", "Bb", "Cm", "Ddim"], 
+    "E":  ["E", "F#m", "G#m", "A", "B", "C#m", "D#dim"], "F":  ["F", "Gm", "Am", "Bb", "C", "Dm", "Edim"], "Gb": ["Gb", "Abm", "Bbm", "Cb", "Db", "Ebm", "Fdim"],
+    "F#": ["F#", "G#m", "A#m", "B", "C#", "D#m", "E#dim"], "G":  ["G", "Am", "Bm", "C", "D", "Em", "F#dim"], "Ab": ["Ab", "Bbm", "Cm", "Db", "Eb", "Fm", "Gdim"],
+    "G#": ["Ab", "Bbm", "Cm", "Db", "Eb", "Fm", "Gdim"], "A":  ["A", "Bm", "C#m", "D", "E", "F#m", "G#dim"], "Bb": ["Bb", "Cm", "Dm", "Eb", "F", "Gm", "Adim"],
+    "A#": ["Bb", "Cm", "Dm", "Eb", "F", "Gm", "Adim"], "B":  ["B", "C#m", "D#m", "E", "F#", "G#m", "A#dim"], "Cb": ["B", "C#m", "D#m", "E", "F#", "G#m", "A#dim"] 
+};
+const CAPO_DATA = {
+    "A":  { text: "use Capo 'Fret' 2", key: "G" }, "Bb": { text: "use Capo 'Fret' 3", key: "G" }, "A#": { text: "use Capo 'Fret' 3", key: "G" },
+    "B":  { text: "use Capo 'Fret' 4", key: "G" }, "C":  { text: "Open (C) or use Capo 'Fret' 5", key: "G" }, "Db": { text: "use Capo 'Fret' 1", key: "C" },
+    "C#": { text: "use Capo 'Fret' 1", key: "C" }, "D":  { text: "use Capo 'Fret' 2", key: "C" }, "Eb": { text: "use Capo 'Fret' 3", key: "C" },
+    "D#": { text: "use Capo 'Fret' 3", key: "C" }, "E":  { text: "use Capo 'Fret' 4", key: "C" }, "F":  { text: "use Capo 'Fret' 5 (C) or Capo 'Fret' 1", key: "E" },
+    "Gb": { text: "use Capo 'Fret' 2", key: "E" }, "F#": { text: "use Capo 'Fret' 2", key: "E" }, "G":  { text: "Open", key: "G" },
+    "Ab": { text: "use Capo 'Fret' 1", key: "G" }, "G#": { text: "use Capo 'Fret' 1", key: "G" }
+};
+const FAMILY_DEGREES = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
+
+// --- STORAGE KEYS (PERSONAL ISOLATION) ---
+const READER_STORAGE_KEY = 'personal_reader_data_v1';
+const ALL_SONGS_KEY = 'personal_all_songs';
+const PLAYLIST_KEY = 'personal_playlist';
+const CURRENT_ID_KEY = 'personal_current_song_id';
+const THEME_PREF_KEY = 'personal_reader_theme';
+const COLS_PREF_KEY  = 'personal_reader_columns';
+
+// --- HYBRID BRIDGE FUNCTIONS (Called by Firebase) ---
+window.updateLocalSetlist = function(newPlaylist) {
+    setSyncStatus('Updating Setlist...', 0);
+    if(!Array.isArray(newPlaylist)) return;
+    
+    // Accept Firebase payload directly (No filtering)
+    playlist = newPlaylist;
+    try { localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist)); } catch(e){}
+    
+    // Notice we removed normalizePlaylist() here to prevent accidental deletion
+    populateDropdown();
+    
+    if(currentId && !playlist.includes(currentId)) currentId = playlist[0] || null;
+    if(!currentId && playlist.length > 0) currentId = playlist[0];
+    if(currentId) loadSongById(currentId);
+    
+    setTimeout(() => {
+        setSyncStatus('Setlist Updated', null); 
+        setTimeout(()=>setSyncStatus(''), 2000);
+    }, 600);
+};
+
+window.updateLocalSong = function(id, data) {
+    setSyncStatus('Receiving Edit...', 0);
+    const idx = window.allSongs.findIndex(s => s.id === id);
+    if(idx > -1) { window.allSongs[idx] = { ...window.allSongs[idx], ...data }; } 
+    else { window.allSongs.push(data); }
+    try { localStorage.setItem(ALL_SONGS_KEY, JSON.stringify(window.allSongs)); } catch(e){}
+    
+    if(currentId === id) { 
+        loadSongById(id); 
+        setTimeout(() => {
+            setSyncStatus('Live Edit Received', null); 
+            setTimeout(()=>setSyncStatus(''), 2000);
+        }, 600); 
+    }
+};
+
+window.updatePublicLibrary = function(firebaseSongs) {
+    // Hidden the sync status UI since it's instant now
+    if(!firebaseSongs) return;
+    
+    // Load directly into active memory
+    window.allSongs = Object.values(firebaseSongs);
+    
+    // 🔥 LOCAL STORAGE SAVING COMPLETELY DELETED HERE 🔥
+    
+    populateDropdown();
+    
+    // Auto-load the current song, or the very first song if the app just opened
+    if(currentId) {
+        loadSongById(currentId);
+    } else if (window.allSongs.length > 0) {
+        loadSongById(window.allSongs[0].id);
+    }
+};
+
+// --- APP STATE (NO MORE HEAVY CACHING) ---
+// We start with an empty array. It will fill instantly when Firebase connects!
+window.allSongs = []; 
+let playlist = JSON.parse(localStorage.getItem('personal_playlist') || '[]'); 
+let currentId = localStorage.getItem('personal_current_song_id') || null;
+let trans = 0;
+let fontSizePx = 20;
+const FONT_MIN = 12; const FONT_MAX = 42;
+let playlistDraft = [];
+
+// --- DOM ELEMENTS ---
+const readerEl = document.getElementById('reader');
+const titleEl = document.getElementById('titleEl');
+const artistEl = document.getElementById('artistEl');
+const transKeyEl = document.getElementById('transKeyEl');
+const keyDisplayBtn = document.getElementById('keyDisplayBtn');
+const syncStatus = document.getElementById('syncStatus');
+const songSelect = document.getElementById('songSelect');
+const gearBtn = document.getElementById('gearBtn');
+const gearPanel = document.getElementById('gearPanel');
+const keyRow = document.getElementById('keyRow');
+const mainFamilyDisplay = document.getElementById('mainFamilyDisplay');
+const gearFamilyDisplay = document.getElementById('gearFamilyDisplay');
+const capoDisplay = document.getElementById('capoDisplay');
+const floatDock = document.getElementById('floatDock');
+const openSetlistBtn = document.getElementById('openSetlistBtn');
+const setlistModal = document.getElementById('setlistModal');
+const setlistListEl = document.getElementById('setlistList');
+const saveSetlistBtn = document.getElementById('saveSetlistBtn');
+const cancelSetlistBtn = document.getElementById('cancelSetlistBtn');
+const setlistStatsEl = document.getElementById('setlistStats');
+const xCloseSetlistBtn = document.getElementById('xCloseSetlistBtn');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+const searchInput = document.getElementById('searchInput');
+const searchSuggestions = document.getElementById('searchSuggestions');
+
+const KEY_BUTTONS = ['A','A#','Bb','B','C','C#','Db','D','D#','Eb','E','Fb','F','F#','Gb','G','G#','Ab'];
+const NOTES_SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTES_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const NOTE_TO_INDEX = {C:0,'B#':0,'C#':1,'Db':1,D:2,'D#':3,'Eb':3,E:4,'Fb':4,F:5,'E#':5,'F#':6,'Gb':6,G:7,'G#':8,'Ab':8,A:9,'A#':10,'Bb':10,B:11,'Cb':11};
+const CHORD_RE = /\b([A-G](?:#|b)?)(?:(maj|min|m|dim|aug|sus|add)?(?:\d+)?(?:[#b+\-])?)?(?:\/([A-G](?:#|b)?))?(?:\s|$|(?=\())/g;
+
+// --- HELPERS ---
+function escapeHtml(s){ return (s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }
+function transposeRoot(root, semitones, targetKeyName){
+  const rootStr = (root||'').replace('♯','#').replace('♭','b');
+  const idx = NOTE_TO_INDEX[rootStr];
+  if(idx == null) return root;
+  const song = window.allSongs.find(x => x.id === currentId);
+  const currentKey = song?.key || guessOriginalKeyFromContent(song?.content) || 'C';
+  const currentKeyIdx = NOTE_TO_INDEX[currentKey.replace('♯','#').replace('♭','b')];
+  let degree = (idx - currentKeyIdx) % 12;
+  if(degree < 0) degree += 12;
+  const targetKey = targetKeyName.replace('♯','#').replace('♭','b');
+  const family = KEY_FAMILIES[targetKey];
+  if(!family) {
+    let ni = (idx + semitones) % 12; if(ni < 0) ni += 12;
+    return targetKey.includes('b') ? NOTES_FLAT[ni] : NOTES_SHARP[ni];
+  }
+  const degreeMap = { 0:0, 2:1, 4:2, 5:3, 7:4, 9:5, 11:6 };
+  if(degreeMap[degree] !== undefined) {
+      const rawChord = family[degreeMap[degree]];
+      return rawChord.replace(/(m|dim)$/, '');
+  }
+  let ni = (idx + semitones) % 12; if(ni < 0) ni += 12;
+  return targetKey.includes('b') ? NOTES_FLAT[ni] : NOTES_SHARP[ni];
+}
+function transposeText(text, semitones, targetKeyName){
+  if(typeof semitones !== 'number' || semitones === 0) return text;
+  return text.replace(CHORD_RE, (m, root, mod, slash) => {
+    const nr = transposeRoot(root, semitones, targetKeyName);
+    let suffix = m.slice(root.length);
+    if (slash) suffix = suffix.slice(0, -(slash.length + 1));
+    const bass = slash ? '/' + transposeRoot(slash, semitones, targetKeyName) : '';
+    return nr + suffix + bass;
+  });
+}
+function fixDoubleSharps(note){
+  if(!note) return note;
+  return note.replace(/([A-G])##/g, (match, root) => {
+    const enh = { C: "D", D: "E", E: "F#", F: "G", G: "A", A: "B", B: "C#" };
+    return enh[root] || match;
+  });
+}
+function highlightHtml(text, targetKeyName, semitones){
+  let t = text || '';
+  if(typeof semitones === 'number' && semitones !== 0) t = transposeText(t, semitones, targetKeyName);
+  let escaped = escapeHtml(t);
+  escaped = escaped.replace(CHORD_RE, (m, root, mod, slash) => { return `<span class="chord">${fixDoubleSharps(m)}</span>`; });
+  const sectionRegex = /\b(Verse\s*\d*|Chorus\s*\d*|Bridge|Pre[-\s]?Chorus|Post[-\s]?Chorus|Intro|Interlude|Instrumental|Tag|Ending|Refrain|Repeat|Outro)\b/gi;
+  escaped = escaped.replace(sectionRegex, (label) => `<span class="section-label">${label}</span>`);
+  return escaped;
+}
+function setSyncStatus(msg, percent = null){
+  if(syncStatus) { syncStatus.textContent = msg ? `• ${msg}${percent !== null ? ` ${percent}%` : ''}` : ''; }
+  const overlay = document.getElementById('statusOverlay');
+  const textEl = document.getElementById('statusText');
+  const spinner = document.getElementById('statusSpinner');
+  if(!overlay || !textEl || !spinner) return;
+  if(!msg){ overlay.classList.add('opacity-0'); overlay.classList.add('-translate-y-2'); return; }
+  overlay.classList.remove('opacity-0'); overlay.classList.remove('-translate-y-2');
+  let text = msg; if(percent !== null) text += ` ${percent}%`;
+  textEl.textContent = text.toUpperCase();
+  const lowerMsg = msg.toLowerCase();
+  const isDone = lowerMsg.includes('updated') || lowerMsg.includes('synced') || lowerMsg.includes('received') || lowerMsg.includes('saved');
+  if(isDone){ spinner.style.display = 'none'; textEl.style.color = 'var(--section)'; } 
+  else { spinner.style.display = 'block'; textEl.style.color = 'var(--accent)'; }
+}
+function getSongSettings(songId){ return JSON.parse(localStorage.getItem('song_settings_' + songId) || '{}'); }
+function saveSongSettings(songId, settings){ localStorage.setItem('song_settings_' + songId, JSON.stringify(settings)); }
+
+function buildKeyButtons(){
+  keyRow.innerHTML = '';
+  KEY_BUTTONS.forEach(keyName => {
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'key-btn'; btn.dataset.key = keyName; btn.textContent = keyName;
+    btn.addEventListener('click', () => onKeySelected(keyName)); keyRow.appendChild(btn);
+  });
+}
+function setActiveKeyButton(name){
+  const buttons = keyRow.querySelectorAll('.key-btn');
+  buttons.forEach(b => { if(b.dataset.key === name) b.classList.add('active'); else b.classList.remove('active'); });
+}
+function applyFontSize(size){
+  fontSizePx = Math.max(FONT_MIN, Math.min(FONT_MAX, size|0));
+  readerEl.style.fontSize = fontSizePx + 'px';
+  if(currentId){ const st = getSongSettings(currentId); st.fontSize = fontSizePx; saveSongSettings(currentId, st); }
+}
+function renderContent(text, targetKey){
+  const html = highlightHtml(text, targetKey, trans);
+  
+  // 🧠 THE SAFE SMART CUT: Line-by-Line, gluing chords and headers to lyrics
+  const lines = html.split(/\n/);
+  let htmlWithDivs = '';
+  
+  for (let i = 0; i < lines.length; i++) {
+      let line = lines[i] || ' ';
+      let inlineStyle = ""; 
+      
+      // If this line has a Chord or a Section Label, glue it to the next line!
+      if (line.includes('class="chord"') || line.includes('class="section-label"')) {
+          inlineStyle = "break-after: avoid; page-break-after: avoid;";
+      }
+      
+      if (inlineStyle) {
+          htmlWithDivs += `<div class="reader-line" style="${inlineStyle}">${line}</div>`;
+      } else {
+          htmlWithDivs += `<div class="reader-line">${line}</div>`;
+      }
+  }
+  
+  readerEl.innerHTML = htmlWithDivs;
+}
+function guessOriginalKeyFromContent(text){
+  if(!text) return null;
+  const counts = {}; let m; CHORD_RE.lastIndex = 0;
+  while((m = CHORD_RE.exec(text)) !== null){
+    const root = m[1]; if(!root) continue;
+    const normalized = root.replace('♯','#').replace('♭','b');
+    if(NOTE_TO_INDEX[normalized] == null) continue;
+    counts[normalized] = (counts[normalized]||0)+1;
+  }
+  const keys = Object.keys(counts); if(keys.length === 0) return null;
+  let best = null, bestCnt = -1;
+  for(const k of keys){ if(counts[k] > bestCnt){ best = k; bestCnt = counts[k]; } }
+  return best;
+}
+function computeSemitoneShift(originalKeyName, targetKeyName){
+  const o = (originalKeyName||'').replace('♯','#').replace('♭','b');
+  const t = (targetKeyName||'').replace('♯','#').replace('♭','b');
+  const oi = NOTE_TO_INDEX[o]; const ti = NOTE_TO_INDEX[t];
+  if(oi == null || ti == null) return 0;
+  let delta = ti - oi; if(delta > 6) delta -= 12; if(delta < -6) delta += 12;
+  return delta;
+}
+function renderCapoSuggestion(keyName) {
+    if(!capoDisplay) return;
+    const normalized = (keyName||'').replace('♯','#').replace('♭','b');
+    const data = CAPO_DATA[normalized];
+    if(!data) { capoDisplay.innerHTML = ''; return; }
+    capoDisplay.innerHTML = `<span class="whitespace-nowrap">🎸  ${data.text}</span><span style="color:var(--text-muted); font-weight:normal;" class="hidden sm:inline">|</span><span style="color:var(--text-muted); font-weight:normal;">(Guitarist can play Key of ${data.key})</span>`;
+}
+function renderChordFamily(keyName) {
+    const targets = [mainFamilyDisplay, gearFamilyDisplay];
+    const normalized = (keyName||'').replace('♯','#').replace('♭','b');
+    const family = KEY_FAMILIES[normalized] || [];
+    let html = '';
+    if (family.length === 0) { html = '<span class="text-xs text-muted w-full text-center py-1 italic opacity-50">Select a standard key to see family</span>'; } 
+    else {
+        html = family.map((chord, i) => {
+            const degree = FAMILY_DEGREES[i] || ''; const isPrimary = (i === 0 || i === 3 || i === 4); const isDim = (i === 6);
+            let chordClass = 'family-chord'; if (isPrimary) chordClass += ' primary'; if (isDim) chordClass += ' dim';
+            return `<div class="family-pill"><span class="family-degree">${degree}</span><span class="${chordClass}">${chord}</span></div>`;
+        }).join('');
+    }
+    targets.forEach(el => { if(el) el.innerHTML = html; });
+}
+function updateTransposeDisplay(){
+  const s = window.allSongs.find(x => x.id === currentId);
+  if(!s){ transKeyEl.textContent = '—'; setActiveKeyButton(null); renderChordFamily(null); renderCapoSuggestion(null); return; }
+  const settings = getSongSettings(currentId) || {};
+  const orig = s.key || s.originalKey || settings.originalKey || guessOriginalKeyFromContent(s.content) || 'C';
+  let targetKey = settings.chosenKey || transposeRoot(orig, trans, settings.chosenKey || 'C');
+  transKeyEl.textContent = targetKey || '—';
+  setActiveKeyButton(targetKey); renderChordFamily(targetKey); renderCapoSuggestion(targetKey); renderContent(s.content || '', targetKey);
+}
+function onKeySelected(keyName){
+  const s = window.allSongs.find(x => x.id === currentId); if(!s) return;
+  let settings = getSongSettings(currentId) || {};
+  let orig = s.key || s.originalKey || settings.originalKey || guessOriginalKeyFromContent(s.content) || 'C';
+  trans = computeSemitoneShift(orig, keyName);
+  settings.transpose = trans; settings.chosenKey = keyName; settings.originalKey = orig;
+  saveSongSettings(currentId, settings);
+  updateTransposeDisplay();
+}
+
+// --- FIX: Normalize Playlist strictly accepts the live Setlist ---
+function normalizePlaylist(){
+  if(!Array.isArray(playlist)) playlist = [];
+  if(!Array.isArray(window.allSongs)) window.allSongs = [];
+  
+  if(!currentId && playlist.length > 0) currentId = playlist[0];
+  if(currentId && !playlist.includes(currentId) && playlist.length > 0) currentId = playlist[0];
+  try { localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist)); } catch(e){}
+  try { localStorage.setItem(CURRENT_ID_KEY, currentId || ''); } catch(e){}
+}
+
+function populateDropdown(searchTerm = '') {
+  if (!songSelect) return;
+  songSelect.innerHTML = '';
+  const lowerTerm = searchTerm.toLowerCase().trim();
+  
+  // 1. Filter based on what you typed (checks both Title and Artist!)
+  let filteredSongs = window.allSongs.filter(s => 
+      (s.title || '').toLowerCase().includes(lowerTerm) || 
+      (s.artist || '').toLowerCase().includes(lowerTerm)
+  );
+
+  // 2. SMART SORT: Alphabetical, but exact start matches jump to the top!
+  filteredSongs.sort((a, b) => {
+      const aTitle = (a.title || '').toLowerCase();
+      const bTitle = (b.title || '').toLowerCase();
+      
+      // If there is a search term, prioritize titles that START with it
+      if (lowerTerm) {
+          const aStarts = aTitle.startsWith(lowerTerm);
+          const bStarts = bTitle.startsWith(lowerTerm);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+      }
+      
+      // Otherwise, just sort alphabetically
+      return aTitle.localeCompare(bTitle);
+  });
+
+  // 3. Fill the dropdown with the smart-sorted results
+  filteredSongs.forEach(s => {
+    const opt = document.createElement('option'); 
+    opt.value = s.id; 
+    opt.textContent = s.title || 'Untitled';
+    if(s.id === currentId) opt.selected = true; 
+    songSelect.appendChild(opt);
+  });
+
+  // 4. Update the playlist so Next/Prev arrows follow your search results
+  playlist = filteredSongs.map(s => s.id);
+}
+
+function loadSongById(id){
+  const s = window.allSongs.find(x => x.id === id); if(!s) return false;
+  currentId = id; try { localStorage.setItem(CURRENT_ID_KEY, id); } catch(e){}
+  const settings = getSongSettings(id) || {};
+  trans = Number(settings.transpose || 0);
+  const savedSize = (settings.fontSize != null) ? Number(settings.fontSize) : fontSizePx;
+  applyFontSize(savedSize);
+  titleEl.textContent = s.title || 'Reader'; artistEl.textContent = s.artist || '';
+  updateTransposeDisplay(); return true;
+}
+function ensureContentFallback(){
+  const readerPayload = JSON.parse(localStorage.getItem(READER_STORAGE_KEY) || 'null');
+  const allHaveContent = Array.isArray(window.allSongs) && window.allSongs.length>0 && window.allSongs.some(s => typeof s.content === 'string' && s.content.trim().length>0);
+  if((!Array.isArray(window.allSongs) || window.allSongs.length===0 || !allHaveContent) && readerPayload){
+    const id = 'reader_single_' + Date.now();
+    window.allSongs = [{ id, title: readerPayload.title || 'Untitled', artist: readerPayload.artist || '', content: readerPayload.content || '', key: readerPayload.key || undefined }];
+    playlist = [id]; currentId = id; trans = Number(readerPayload.transpose||0);
+    try{ localStorage.setItem(ALL_SONGS_KEY, JSON.stringify(window.allSongs)); localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist)); localStorage.setItem(CURRENT_ID_KEY, currentId); }catch(e){}
+  }
+}
+
+function applyColumns(n){
+  const readerDiv = document.getElementById('reader');
+  const cols = (String(n) === '2') ? 2 : 1;
+  if(cols === 2) readerDiv.classList.add('two-col'); else readerDiv.classList.remove('two-col');
+  try{ localStorage.setItem(COLS_PREF_KEY, String(cols)); }catch(e){}
+}
+function toggleColumns(){ const readerDiv = document.getElementById('reader'); const isTwo = readerDiv.classList.contains('two-col'); applyColumns(isTwo ? 1 : 2); }
+function applyTheme(mode){
+  const m = (mode === 'light') ? 'light' : 'dark';
+  if(m === 'light'){ document.body.classList.add('light'); themeToggleBtn.textContent = '☀️'; }
+  else{ document.body.classList.remove('light'); themeToggleBtn.textContent = '🌙'; }
+  try{ localStorage.setItem(THEME_PREF_KEY, m); }catch(e){}
+}
+
+function openSetlistModal(){
+  playlistDraft = Array.isArray(playlist) ? playlist.slice() : [];
+  const ids = new Set(window.allSongs.map(s => s && s.id).filter(Boolean));
+  playlistDraft = playlistDraft.filter(id => ids.has(id));
+  renderSetlistModal();
+  setlistModal.classList.remove('hidden'); setlistModal.setAttribute('aria-hidden', 'false'); setlistModal.style.display = '';
+}
+function closeSetlistModal(){ setlistModal.classList.add('hidden'); setlistModal.setAttribute('aria-hidden', 'true'); setlistModal.style.display = ''; }
+function renderSetlistModal(){
+  if(setlistStatsEl) setlistStatsEl.textContent = `${playlistDraft.length} songs`;
+  setlistListEl.innerHTML = '';
+  playlistDraft.forEach((id, idx) => {
+    const song = window.allSongs.find(s => s && s.id === id); if(!song) return;
+    const card = document.createElement('div'); card.className = 'songCard'; card.dataset.id = id;
+    card.innerHTML = `<div class="setlistRow"><div class="font-mono font-bold w-6 text-right" style="color: var(--text-muted)">${idx + 1}.</div><div class="flex-1 min-w-0"><div class="font-bold truncate" style="color: var(--text)">${escapeHtml(song.title || 'Untitled')}</div><div class="text-xs truncate" style="color: var(--text-muted)">${escapeHtml(song.artist || '')}</div></div><div class="btnGroup"><button class="moveBtn moveUpBtn" title="Move up">▲</button><button class="moveBtn moveDownBtn" title="Move down">▼</button><button class="removeBtn" title="Remove from setlist">✕</button></div></div>`;
+    const upBtn = card.querySelector('.moveUpBtn'); const downBtn = card.querySelector('.moveDownBtn');
+    if(upBtn){ upBtn.disabled = (idx === 0); upBtn.style.opacity = (idx === 0) ? '0.3' : '1'; upBtn.addEventListener('click', (e)=>{ e.preventDefault(); if(idx <= 0) return; const temp = playlistDraft[idx-1]; playlistDraft[idx-1] = playlistDraft[idx]; playlistDraft[idx] = temp; renderSetlistModal(); }); }
+    if(downBtn){ downBtn.disabled = (idx === playlistDraft.length - 1); downBtn.style.opacity = (idx === playlistDraft.length - 1) ? '0.3' : '1'; downBtn.addEventListener('click', (e)=>{ e.preventDefault(); if(idx >= playlistDraft.length - 1) return; const temp = playlistDraft[idx+1]; playlistDraft[idx+1] = playlistDraft[idx]; playlistDraft[idx] = temp; renderSetlistModal(); }); }
+    card.querySelector('.removeBtn').addEventListener('click', (e)=>{ e.preventDefault(); playlistDraft = playlistDraft.filter(x => x !== id); renderSetlistModal(); });
+    setlistListEl.appendChild(card);
+  });
+}
+
+// Cleaned up event listeners (Read-Only/Local Sync Edition)
+openSetlistBtn.addEventListener('click', () => { openSetlistModal(); });
+cancelSetlistBtn.addEventListener('click', () => closeSetlistModal());
+xCloseSetlistBtn.addEventListener('click', () => closeSetlistModal());
+setlistModal.addEventListener('click', (e) => { if(e.target === setlistModal) closeSetlistModal(); });
+
+// --- SEARCH BAR LISTENER ---
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        populateDropdown(e.target.value);
+        
+        // Auto-load the first result if you type something and songs match
+        if (playlist.length > 0 && e.target.value.trim() !== '') {
+            loadSongById(playlist[0]);
+        }
+    });
+}
+
+// --- 🧠 SMART SEARCH ENGINE ---
+if (searchInput && searchSuggestions) {
+    // 1. Listen as you type
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase().trim();
+        
+        // Hide if empty
+        if (!term) {
+            searchSuggestions.classList.add('hidden');
+            return;
+        }
+
+        // 2. Filter & SMART SORT Logic
+        const results = window.allSongs.filter(s => 
+            (s.title || '').toLowerCase().includes(term) || 
+            (s.artist || '').toLowerCase().includes(term)
+        ).sort((a, b) => {
+            const aTitle = (a.title || '').toLowerCase();
+            const bTitle = (b.title || '').toLowerCase();
+            
+            // Priority 1: Exact Start Match (e.g., typing "How" puts "How Great" first)
+            const aStarts = aTitle.startsWith(term);
+            const bStarts = bTitle.startsWith(term);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            
+            // Priority 2: Alphabetical fallback
+            return aTitle.localeCompare(bTitle);
+        });
+
+        // 3. Build the UI for the suggestions
+        if (results.length === 0) {
+            searchSuggestions.innerHTML = `<div class="p-4 text-sm font-bold text-center" style="color: var(--text-muted)">No matches found</div>`;
+        } else {
+            // Only show the top 15 results to keep it fast and clean
+            searchSuggestions.innerHTML = results.slice(0, 15).map(s => `
+                <div class="suggestion-item p-3 border-b cursor-pointer transition flex justify-between items-center hover:bg-blue-500/10" data-id="${s.id}" style="border-color: var(--border)">
+                    <span class="font-bold text-sm" style="color: var(--text)">${escapeHtml(s.title || 'Untitled')}</span>
+                    <span class="text-[10px] uppercase tracking-wider font-bold" style="color: var(--text-muted)">${escapeHtml(s.artist || '')}</span>
+                </div>
+            `).join('');
+        }
+        
+        searchSuggestions.classList.remove('hidden');
+    });
+
+// 4. Handle clicking a suggestion
+    searchSuggestions.addEventListener('click', (e) => {
+        const item = e.target.closest('.suggestion-item');
+        if (item) {
+            const songId = item.dataset.id;
+            loadSongById(songId); 
+            
+            // Clean up UI
+            searchInput.value = ''; 
+            searchInput.blur(); 
+            searchSuggestions.classList.add('hidden');
+
+            // 🎯 THE FIX: Rebuild the full list since the search bar is now empty
+            populateDropdown(); 
+
+            // 🔄 SYNCS THE DROPDOWN WITH YOUR NEWLY SELECTED SONG
+            if(songSelect) songSelect.value = songId; 
+        }
+    });
+
+    // 5. Hide suggestions when clicking outside the box
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            searchSuggestions.classList.add('hidden');
+        }
+    });
+}
+
+
+// Local-only arrangement (Does NOT write to Firebase)
+saveSetlistBtn.addEventListener('click', () => {
+    // 1. Update Local Memory instantly
+    playlist = playlistDraft.slice(); 
+    try { localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist)); } catch(e){}
+    
+    // 2. Refresh UI
+    normalizePlaylist(); 
+    populateDropdown();
+    
+    // 3. Navigate if needed
+    if(currentId && !playlist.includes(currentId)) currentId = playlist[0] || null;
+    if(currentId) loadSongById(currentId); 
+    
+    // 4. Show local success
+    setSyncStatus('Saved Locally for this Device', null);
+    setTimeout(() => setSyncStatus(''), 2000);
+    
+    closeSetlistModal();
+});
+
+songSelect.addEventListener('change', (e) => { loadSongById(e.target.value); populateDropdown(); });
+document.getElementById('prevSongBtn').addEventListener('click', () => { const idx = playlist.indexOf(currentId); if(idx > 0) loadSongById(playlist[idx-1]); populateDropdown(); });
+document.getElementById('nextSongBtn').addEventListener('click', () => { const idx = playlist.indexOf(currentId); if(idx < playlist.length - 1) loadSongById(playlist[idx+1]); populateDropdown(); });
+gearBtn.addEventListener('click', (e) => { e.stopPropagation(); const isOpen = !gearPanel.classList.contains('hidden'); if(isOpen) gearPanel.classList.add('hidden'); else gearPanel.classList.remove('hidden'); });
+document.getElementById('closeBtn').addEventListener('click', ()=>{ gearPanel.classList.add('hidden'); });
+keyDisplayBtn.addEventListener('click', (e) => { e.stopPropagation(); gearPanel.classList.remove('hidden'); });
+window.addEventListener('click', (e) => { if (!gearPanel.classList.contains('hidden')) { if (!gearPanel.contains(e.target) && e.target !== gearBtn && !gearBtn.contains(e.target) && !keyDisplayBtn.contains(e.target)) { gearPanel.classList.add('hidden'); } } });
+
+// --- MERGED PRINT LOGIC (FIXED CHORD & CONTROLS) ---
+const printOverlay = document.getElementById('printOverlay');
+const onePageToggle = document.getElementById('onePageToggle');
+const pageBox = document.getElementById('pageBox');
+const scrollBox = document.getElementById('scrollBox');
+const printWrap = document.getElementById('printWrap');
+const printReaderPage = document.getElementById('printReaderPage');
+const printReaderScroll = document.getElementById('printReaderScroll');
+
+let onePageEnabled = false;
+let printFontSize = 12; // Initial Pt
+let printCols = 1; // Initial Cols
+
+// Open Print View
+document.getElementById('openPrintBtn').addEventListener('click', () => {
+    gearPanel.classList.add('hidden'); // Close gear menu
+    
+    // Sync initial state
+    const settings = getSongSettings(currentId) || {};
+    printFontSize = Number(settings.fontSize || 12);
+    printCols = Number(settings.columns || 1);
+    
+    renderPrintView();
+    printOverlay.classList.add('open');
+});
+
+window.closePrintView = () => {
+    printOverlay.classList.remove('open');
+};
+
+window.triggerNativePrint = () => {
+    window.print();
+};
+
+// --- INTERACTIVE PRINT CONTROLS ---
+// --- 🆕 PRINT VIEW NAVIGATION ---
+window.printPrevSong = () => {
+    const idx = playlist.indexOf(currentId);
+    if(idx > 0) {
+        loadSongById(playlist[idx-1]);
+        populateDropdown();
+        renderPrintView();
+    }
+};
+
+window.printNextSong = () => {
+    const idx = playlist.indexOf(currentId);
+    if(idx > -1 && idx < playlist.length - 1) {
+        loadSongById(playlist[idx+1]);
+        populateDropdown();
+        renderPrintView();
+    }
+};
+
+window.adjustPrintFont = (delta) => {
+    printFontSize = Math.max(8, Math.min(24, printFontSize + delta));
+    renderPrintView(); // Re-render to apply
+};
+
+window.cyclePrintCols = () => {
+    printCols++;
+    if(printCols > 3) printCols = 1;
+    renderPrintView();
+};
+
+if(onePageToggle) {
+    onePageToggle.addEventListener('change', () => {
+        onePageEnabled = !!onePageToggle.checked;
+        applyPreviewMode();
+    });
+}
+
+function renderPrintView() {
+    const song = window.allSongs.find(s => s.id === currentId);
+    
+    // Update Button States
+    const idx = playlist.indexOf(currentId);
+    const prevBtn = document.getElementById('printPrevBtn');
+    const nextBtn = document.getElementById('printNextBtn');
+    if (prevBtn) {
+        prevBtn.disabled = (idx <= 0);
+        prevBtn.style.opacity = (idx <= 0) ? '0.4' : '1';
+        prevBtn.style.cursor = (idx <= 0) ? 'not-allowed' : 'pointer';
+    }
+    if (nextBtn) {
+        nextBtn.disabled = (idx < 0 || idx >= playlist.length - 1);
+        nextBtn.style.opacity = (idx < 0 || idx >= playlist.length - 1) ? '0.4' : '1';
+        nextBtn.style.cursor = (idx < 0 || idx >= playlist.length - 1) ? 'not-allowed' : 'pointer';
+    }
+
+    if(!song) {
+        document.getElementById('phTitleMain').textContent = "No Song Selected";
+        return;
+    }
+
+    const settings = getSongSettings(currentId) || {};
+    const semitones = Number(settings.transpose || 0);
+
+    const songKey = song.key || guessOriginalKeyFromContent(song.content) || 'C';
+    let targetKeyName = settings.chosenKey;
+    if (!targetKeyName) {
+         targetKeyName = transposeRoot(songKey, semitones, 'C'); 
+    }
+
+    document.getElementById('phKeyEl').textContent = targetKeyName;
+    document.getElementById('phFontEl').textContent = printFontSize + 'pt';
+    document.getElementById('phColsEl').textContent = onePageEnabled ? "Auto" : printCols;
+
+    const transText = semitones === 0 ? '' : (semitones > 0 ? `+${semitones}` : `${semitones}`);
+    document.getElementById('printTitlePage').textContent = song.title;
+    document.getElementById('printSubPage').textContent = `${song.artist || ''} • Key: ${targetKeyName} ${transText}`;
+
+    const htmlWithSpans = highlightHtml(song.content || '', targetKeyName, semitones);
+    
+    // 🧠 THE SAFE SMART CUT: Line-by-Line, but glue chords to lyrics!
+    const lines = htmlWithSpans.split(/\n/);
+    let htmlWithDivs = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i] || ' ';
+        let inlineStyle = "margin-bottom: 0.2em; break-inside: avoid; page-break-inside: avoid;";
+        
+        // If this line has a Chord or a Section Label, glue it to the next line!
+        if (line.includes('class="chord"') || line.includes('class="section-label"')) {
+            inlineStyle += " break-after: avoid; page-break-after: avoid;";
+        }
+        
+        htmlWithDivs += `<div class="reader-line" style="${inlineStyle}">${line}</div>`;
+    }
+    
+    printReaderPage.innerHTML = htmlWithDivs;
+    printReaderScroll.innerHTML = htmlWithDivs;
+
+    document.documentElement.style.setProperty('--print-text-size', printFontSize + 'pt');
+    document.documentElement.style.setProperty('--print-chord-size', (printFontSize + 2) + 'pt');
+    document.documentElement.style.setProperty('--print-col-gap', '40px');
+
+    applyPreviewMode();
+}
+
+function applyPreviewMode() {
+    printWrap.classList.remove('cols1','cols2','cols3', 'onepage');
+    
+    if(onePageEnabled) {
+        pageBox.style.display = 'block';
+        scrollBox.style.display = 'none';
+        printWrap.classList.add('onepage');
+        fitToOnePage(); // Auto-scale logic
+    } else {
+        pageBox.style.display = 'none';
+        scrollBox.style.display = 'block';
+        
+        printWrap.classList.add(printCols === 2 ? 'cols2' : printCols === 3 ? 'cols3' : 'cols1');
+        
+        printReaderPage.style.transform = '';
+        printReaderPage.style.width = '';
+    }
+}
+
+function fitToOnePage() {
+    const root = document.documentElement;
+    let textPt = parseFloat(getComputedStyle(root).getPropertyValue('--print-text-size')) || 14;
+    let chordPt = parseFloat(getComputedStyle(root).getPropertyValue('--print-chord-size')) || 17;
+    let line = 1.35;
+    let gap = 40;
+
+    printReaderPage.style.transform = '';
+    printReaderPage.style.width = '';
+
+    for(let steps=0; steps<50; steps++){ 
+        const contentH = printReaderPage.scrollHeight;
+        const pageH = pageBox.clientHeight - 60; 
+
+        if(contentH <= pageH) break;
+
+        if(line > 1.12) { line -= 0.02; root.style.setProperty('--print-line-height', String(line)); continue; }
+        if(gap > 18) { gap -= 2; root.style.setProperty('--print-col-gap', gap + 'px'); continue; }
+        if(textPt > 9) { 
+            textPt -= 0.5; chordPt -= 0.5; 
+            root.style.setProperty('--print-text-size', textPt + 'pt'); 
+            root.style.setProperty('--print-chord-size', chordPt + 'pt'); 
+            continue; 
+        }
+        
+        const currentScale = parseFloat((printReaderPage.style.transform || '').replace(/[^0-9.]/g,'')) || 1;
+        if(currentScale > 0.82){ 
+            const next = Math.max(0.82, currentScale - 0.03); 
+            printReaderPage.style.transformOrigin = 'top left';
+            printReaderPage.style.transform = 'scale(' + next.toFixed(2) + ')'; 
+            printReaderPage.style.width = (100/next).toFixed(2) + '%'; 
+            continue; 
+        } 
+        break;
+    }
+}
+
+const attach = (selector, fn) => { document.querySelectorAll(selector).forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); fn(e); })); };
+attach('#colsToggleBtn, .cols-toggle-mobile', toggleColumns);
+attach('#themeToggleBtn', () => { const isLight = document.body.classList.contains('light'); applyTheme(isLight ? 'dark' : 'light'); });
+attach('#fontMinusBtn, .font-minus-mobile', () => applyFontSize(fontSizePx - 2));
+attach('#fontPlusBtn, .font-plus-mobile', () => applyFontSize(fontSizePx + 2));
+
+(function dockIdleFade(){
+  const dock = document.getElementById('floatDock'); const panel = document.getElementById('gearPanel'); if(!dock) return;
+  const IDLE_MS = 2500; let t = null;
+  function isPanelOpen(){ return panel && !panel.classList.contains('hidden'); }
+  function goIdle(){ if(isPanelOpen()) return; dock.style.opacity = '0.3'; }
+  function wake(){ dock.style.opacity = '1'; clearTimeout(t); t = setTimeout(goIdle, IDLE_MS); }
+  const opts = { passive: true }; window.addEventListener('mousemove', wake, opts); window.addEventListener('scroll', wake, opts); window.addEventListener('touchstart', wake, opts); window.addEventListener('click', wake, opts); wake();
+})();
+
+function initNavigationControls() {
+  document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('setlistModal'); if (modal && !modal.classList.contains('hidden')) return;
+    if (e.key === 'ArrowLeft') { document.getElementById('prevSongBtn').click(); } 
+    else if (e.key === 'ArrowRight') { document.getElementById('nextSongBtn').click(); } 
+    else if (e.key === '+' || e.key === '=') { applyFontSize(fontSizePx + 2); } 
+    else if (e.key === '-') { applyFontSize(fontSizePx - 2); }
+  });
+  let touchStartX = 0; let touchStartY = 0; let initialPinchDistance = null; let initialFontSize = null; const SWIPE_THRESHOLD = 50; 
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; } 
+    else if (e.touches.length === 2) { initialPinchDistance = getDistance(e.touches[0], e.touches[1]); initialFontSize = fontSizePx; }
+  }, {passive: true});
+  document.addEventListener('touchend', (e) => {
+    const modal = document.getElementById('setlistModal'); if (modal && !modal.classList.contains('hidden')) return;
+    if (e.changedTouches.length === 1 && e.touches.length === 0) { const touchEndX = e.changedTouches[0].screenX; const touchEndY = e.changedTouches[0].screenY; handleSwipeGesture(touchStartX, touchStartY, touchEndX, touchEndY); }
+    if (e.touches.length < 2) { initialPinchDistance = null; }
+  }, {passive: true});
+  document.addEventListener('touchmove', (e) => {
+     if (e.touches.length === 2 && initialPinchDistance && initialFontSize) {
+         const currentDist = getDistance(e.touches[0], e.touches[1]); const diff = currentDist - initialPinchDistance; const step = 20; const changes = Math.floor(diff / step);
+         if (changes !== 0) { const newSize = initialFontSize + (changes * 2); applyFontSize(newSize); }
+     }
+  }, {passive: true});
+  function getDistance(t1, t2) { const dx = t1.screenX - t2.screenX; const dy = t1.screenY - t2.screenY; return Math.sqrt(dx * dx + dy * dy); }
+  function handleSwipeGesture(startX, startY, endX, endY) {
+    const diffX = endX - startX; const diffY = endY - startY;
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > SWIPE_THRESHOLD) { if (diffX > 0) { document.getElementById('prevSongBtn').click(); } else { document.getElementById('nextSongBtn').click(); } }
+  }
+}
+
+async function init(){
+  buildKeyButtons();
+  try{ const savedCols = localStorage.getItem(COLS_PREF_KEY) || '1'; applyColumns(savedCols === '2' ? 2 : 1); }catch(e){ applyColumns(1); }
+  try{ const savedTheme = (localStorage.getItem(THEME_PREF_KEY) || 'dark').toLowerCase(); applyTheme(savedTheme === 'light' ? 'light' : 'dark'); }catch(e){ applyTheme('dark'); }
+
+  // We start empty, Firebase will fill this instantly!
+  window.allSongs = [];
+  playlist = [];
+  currentId = localStorage.getItem(CURRENT_ID_KEY) || null;
+
+  initNavigationControls();
+}
+
+window.addEventListener('load', init);
+</script> 
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // 🆕 YOUR NEW PERSONAL FIREBASE CREDENTIALS
+    const firebaseConfig = {
+        apiKey: "AIzaSyAc91Q5P-BdXbI_thaR5dpEKWP2dGW2rIM",
+        authDomain: "kingofright-4a3cc.firebaseapp.com",
+        databaseURL: "https://kingofright-4a3cc-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "kingofright-4a3cc",
+        storageBucket: "kingofright-4a3cc.firebasestorage.app",
+        messagingSenderId: "585292604478",
+        appId: "1:585292604478:web:284d5abe9942413d925d6f",
+        measurementId: "G-CYJVD7QJSJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    console.log("🎸 Personal Reader Mode Activated!");
+
+    // 1. SIMPLE LIBRARY FETCH
+    // Since this is your personal DB, we just grab everything instantly. No complex rules needed.
+    onValue(ref(db, 'library/songs'), (snapshot) => {
+        const data = snapshot.val();
+        if(data) {
+            console.log("🔥 Personal Firebase: Library Synced!");
+            
+            // Format the data for the Reader UI
+            const songsArray = {};
+            Object.keys(data).forEach(key => {
+                songsArray[key] = data[key];
+                songsArray[key].id = key; 
+            });
+            
+            // Push to UI
+            if(window.updatePublicLibrary) {
+                window.updatePublicLibrary(songsArray);
+            }
+        } else {
+            console.log("⚠️ No songs found in Personal Firebase.");
+            if(window.updatePublicLibrary) window.updatePublicLibrary({});
+        }
+    });
+
+    // NOTE: We completely removed the 'live_edit' and 'arrange_songs' listeners.
+    // Your Arrangement Modal will now automatically save and load setlists directly
+    // to your phone/computer's local memory using the existing local storage logic!
+</script>
+</body> 
+</html>
