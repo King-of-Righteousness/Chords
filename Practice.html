@@ -1,0 +1,1452 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0" />
+  <meta name="theme-color" content="#272727" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo-192.png">
+  <title>KOR | Practice Reader</title>
+  <link rel="icon" type="image/ico" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+
+  <!-- accent colour (shared with the other Worship tools) applied before first paint -->
+  <script>
+    try { document.documentElement.setAttribute('data-theme', localStorage.getItem('worship-theme') || 'indigo'); }
+    catch (e) { document.documentElement.setAttribute('data-theme', 'indigo'); }
+  </script>
+
+  <style>
+/* This rule applies ONLY to Desktop screens */
+    @media (min-width: 1024px) {
+        body {
+            zoom: 75%;
+            width: 133.33vw !important;
+            height: 133.33vh !important;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+    }
+
+    /* This rule applies ONLY to Mobile/Tablets so it stays readable */
+    @media (max-width: 1023px) {
+        body {
+            zoom: 100%;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+    }
+
+    /* =====================================================
+       READER · same design family as Hub / Worship Suite
+       (token NAMES are unchanged because the reader script uses them)
+       ===================================================== */
+    :root {
+      /* --- READER THEME (dark = default, like before) --- */
+      --bg: #0e0f12;
+      --panel: #1a1b20;
+      --surface: #212227;
+      --dock-bg: rgba(27, 28, 33, 0.94);
+      --nav-bg: rgba(19, 20, 23, 0.92);
+      --dark: #131417;
+      --text: #ececef;
+      --text-muted: #9a9aa4;
+      --chord: #f87171;          /* chord colour is NOT tied to the accent theme */
+      --section: #10b981;
+      --border: rgba(255, 255, 255, 0.10);
+      --input-bg: #14151a;
+      --accent: #6366F1; --accent-text: #A5B4FC; --accent-rgb: 99, 102, 241;
+      --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --font-ui: 'Poppins', 'Segoe UI', Tahoma, sans-serif;
+
+      /* --- PRINT THEME (Independent) --- */
+      --print-text-size: 12pt;
+      --print-chord-size: 14pt;
+      --print-line-height: 1.35;
+      --print-col-gap: 40px;
+      --bg-preview: #f1f5f9;
+      --panel-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --font-header: 'Playfair Display', serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --print-chord-color: #b91c1c;
+    }
+    /* accent colours: lighter in dark mode (contrast), true brand colour in light mode */
+    :root[data-theme="red"]     { --accent: #E5483C; --accent-text: #FCA5A5; --accent-rgb: 229, 72, 60; }
+    :root[data-theme="emerald"] { --accent: #10B981; --accent-text: #6EE7B7; --accent-rgb: 16, 185, 129; }
+
+    .light {
+      --bg: #f6f6f7;
+      --panel: #ffffff;
+      --surface: #fafafa;
+      --dock-bg: rgba(255, 255, 255, 0.95);
+      --nav-bg: rgba(39, 39, 39, 0.96);
+      --dark: #272727;
+      --text: #1f1f23;
+      --text-muted: #6b6b75;
+      --chord: #dc2626;
+      --section: #059669;
+      --border: #e3e3e6;
+      --input-bg: #fafafa;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+    }
+    :root[data-theme="indigo"] .light  { --accent: #4F46E5; --accent-text: #4338CA; --accent-rgb: 79, 70, 229; }
+    :root[data-theme="red"] .light     { --accent: #DA291C; --accent-text: #C4241A; --accent-rgb: 218, 41, 28; }
+    :root[data-theme="emerald"] .light { --accent: #059669; --accent-text: #047857; --accent-rgb: 5, 150, 105; }
+
+    * { box-sizing: border-box; }
+    html { background: #0e0f12; -webkit-text-size-adjust: 100%; }
+    body { font-family: var(--font-ui); font-size: 14px; line-height: 1.5; background-color: var(--bg); color: var(--text); -webkit-tap-highlight-color: transparent; overflow-x: hidden; min-height: 100vh; padding-bottom: 8rem; margin: 0; transition: background-color 0.3s ease, color 0.3s ease; }
+    button { font-family: inherit; cursor: pointer; }
+    button:focus-visible, select:focus-visible, a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.45); }
+    .hidden { display: none !important; }
+
+    /* --- RESTORED READER CSS (Strictly from Reader.txt) — DO NOT CHANGE: this is what keeps chords aligned --- */
+    .reader {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-ligatures: none;
+      white-space: pre !important; /* CRITICAL FOR CHORD ALIGNMENT */
+      line-height: 1.8;
+    }
+
+    .reader-line {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      min-height: 1.8em;
+    }
+
+    .chord {
+      color: var(--chord);
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .section-label {
+      color: var(--section);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 0.85em;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+      display: inline-block;
+      margin-top: 1em;
+      margin-bottom: 0.2em;
+    }
+    @media (min-width: 900px) { .two-col { column-count: 2; column-gap: 40px; column-rule: 1px solid var(--border); } }
+
+    /* small utility classes used by markup that the reader script generates (it used Tailwind names) */
+    .whitespace-nowrap { white-space: nowrap; } .text-xs { font-size: 0.75rem; line-height: 1rem; } .text-muted { color: var(--text-muted); }
+    .w-full { width: 100%; } .text-center { text-align: center; } .text-right { text-align: right; } .py-1 { padding: 0.25rem 0; }
+    .italic { font-style: italic; } .opacity-50 { opacity: 0.5; } .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .font-bold { font-weight: 700; } .w-6 { width: 1.5rem; flex-shrink: 0; } .flex-1 { flex: 1 1 0%; } .min-w-0 { min-width: 0; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (min-width: 640px) { .hidden.sm\:inline { display: inline !important; } }
+
+    /* ---------- header ---------- */
+    .glass-nav {
+      position: sticky; top: 0; z-index: 50; width: 100%; height: 64px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 24px;
+      background: var(--nav-bg); color: #fff; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-radius: 0 0 20px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); overflow: hidden;
+    }
+    .glass-nav::before { content: ""; position: absolute; width: 200px; height: 200px; border-radius: 50%; background: var(--accent); opacity: 0.18; top: -140px; right: 18%; pointer-events: none; transition: background 0.4s; }
+    .nav-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; position: relative; }
+    .nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; position: relative; }
+    @keyframes korPulse{ 0%,100% { transform: scale(1); box-shadow: 0 0 0 rgba(var(--accent-rgb),0); } 50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(var(--accent-rgb),0.5); } }
+    .korLogo { width: 40px; height: 40px; border-radius: 12px; background: #fff; display: grid; place-items: center; animation: korPulse 3s ease-in-out infinite; border: 1px solid var(--border); overflow: hidden; flex-shrink: 0; }
+    .korLogo img { width: 24px; height: 24px; border-radius: 6px; display: block; object-fit: cover; }
+    .nav-title { min-width: 0; line-height: 1.15; }
+    #titleEl { margin: 0; font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.1px; }
+    #artistEl { margin: 2px 0 0; font-size: 11px; font-weight: 500; color: #a1a1aa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #syncStatus { display: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #a1a1aa; }
+    @media (min-width: 768px) { #syncStatus { display: block; } }
+    .nav-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: nowrap; text-decoration: none; color: #fff; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); transition: all 0.2s var(--ease); }
+    .nav-btn:hover { background: rgba(255,255,255,0.18); transform: translateY(-1px); }
+    .nav-btn.primary { background: var(--accent); border-color: var(--accent); box-shadow: 0 3px 12px rgba(var(--accent-rgb), 0.45); }
+    .nav-btn.primary:hover { filter: brightness(1.1); }
+    .nav-btn.green { color: #6EE7B7; border-color: rgba(110,231,183,0.4); }
+
+    /* ---------- main ---------- */
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 20px 32px; }
+    .song-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    #songSelect { flex: 1 1 260px; max-width: 420px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font: 600 14px var(--font-ui); outline: none; cursor: pointer; box-shadow: var(--shadow); transition: border-color 0.2s, box-shadow 0.2s; }
+    #songSelect:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2); }
+    #keyDisplayBtn { display: inline-flex; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 600; box-shadow: var(--shadow); transition: all 0.2s var(--ease); }
+    #keyDisplayBtn:hover { border-color: var(--accent); transform: translateY(-1px); }
+    #transKeyEl { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 15px; min-width: 44px; text-align: center; padding: 4px 10px; border-radius: 9px; background: rgba(var(--accent-rgb), 0.14); color: var(--accent-text); }
+
+    #mainFamilyDisplay { display: flex; align-items: stretch; justify-content: center; gap: 8px; padding: 10px; margin-bottom: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+    .family-pill { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 30px; max-width: 110px; padding: 6px 4px; border-radius: 12px; background: var(--surface); transition: transform 0.2s var(--ease); }
+    .family-pill:hover { transform: translateY(-2px); }
+    .family-degree { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; letter-spacing: 0.05em; }
+    .family-chord { font-weight: 700; font-size: 14px; color: var(--text); white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+    .family-chord.primary { color: var(--accent-text); }
+    .family-chord.dim { color: var(--text-muted); font-weight: 500; }
+    #gearFamilyDisplay { display: flex; justify-content: space-between; width: 100%; gap: 4px; }
+    #gearFamilyDisplay .family-pill { background: transparent; padding: 2px; }
+
+    #capoDisplay { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; margin-bottom: 14px; padding: 8px 12px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--accent-text); border-radius: 12px; background: rgba(var(--accent-rgb), 0.08); border: 1px dashed rgba(var(--accent-rgb), 0.35); }
+    #capoDisplay:empty { display: none; }
+    @media (min-width: 640px) { #capoDisplay { flex-direction: row; gap: 16px; } }
+
+    #reader { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 20px 26px; box-shadow: var(--shadow); font-size: 20px; overflow-x: auto; transition: background-color 0.3s ease, border-color 0.3s ease; }
+
+    /* ---------- dock ---------- */
+    .float-dock { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; padding: 6px; gap: 4px; border-radius: 20px; background: var(--dock-bg); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(0,0,0,0.35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: opacity 0.3s ease, background-color 0.3s ease; }
+    .dock-btn { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 14px; background: transparent; color: var(--text-muted); font-size: 16px; font-weight: 700; transition: all 0.2s var(--ease); }
+    .dock-btn:hover { background: rgba(var(--accent-rgb), 0.14); color: var(--accent-text); transform: translateY(-2px); }
+    .dock-btn:active { transform: scale(0.94); }
+    .dock-btn.small-text { font-size: 12px; font-weight: 800; }
+    .dock-sep { width: 1px; height: 26px; margin: 0 2px; background: var(--border); }
+    .dock-desktop { display: none; }
+    @media (min-width: 640px) { .dock-desktop { display: inline-flex; } .dock-sep.dock-desktop { display: block; } .dock-btn { width: 48px; height: 48px; } }
+
+    /* ---------- sheets ---------- */
+    .sheet-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(20,20,22,0.65); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); animation: fade 0.25s ease; }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pop { from { opacity: 0; transform: translateY(16px) scale(0.96); } to { opacity: 1; transform: none; } }
+    .sheet { width: 100%; max-width: 560px; max-height: 85vh; display: flex; flex-direction: column; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4); animation: pop 0.4s var(--ease); }
+    .sheet-head { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--panel); }
+    .sheet-head h3 { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .sheet-head h3::before { content: ""; width: 5px; height: 20px; border-radius: 3px; background: var(--accent); }
+    .sheet-sub { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-top: 2px; }
+    .x-close { background: none; border: none; width: 34px; height: 34px; border-radius: 10px; color: var(--text-muted); font-size: 16px; }
+    .x-close:hover { background: var(--surface); color: var(--text); }
+    #setlistList { flex: 1; overflow-y: auto; padding: 14px; background: var(--bg); }
+    .sheet-foot { padding: 16px 22px; display: flex; gap: 10px; border-top: 1px solid var(--border); background: var(--panel); }
+    .btn { flex: 1; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: all 0.2s var(--ease); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover { border-color: var(--accent); color: var(--accent-text); transform: translateY(-1px); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.4); }
+    .btn.primary:hover { color: #fff; filter: brightness(1.08); }
+
+    .songCard { background: var(--panel); border: 1px solid var(--border); padding: 10px 12px; border-radius: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: all 0.2s var(--ease); }
+    .songCard:hover { border-color: rgba(var(--accent-rgb), 0.5); transform: translateX(2px); }
+    .setlistRow { display: flex; align-items: center; width: 100%; gap: 10px; }
+    .setlistRow > div:first-child { color: var(--accent-text) !important; }
+    .btnGroup { margin-left: auto; display: flex; gap: 4px; }
+    .moveBtn, .removeBtn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: var(--surface); color: var(--text); border: 1px solid var(--border); cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .moveBtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-text); }
+    .removeBtn { background: rgba(220,38,38,0.12); color: #f87171; border-color: rgba(220,38,38,0.35); }
+    .removeBtn:hover { background: rgba(220,38,38,0.25); }
+
+    /* ---------- gear panel ---------- */
+    #gearPanel { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 460px; max-height: calc(100vh - 140px); overflow-y: auto; z-index: 55; padding: 20px; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 22px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); animation: popCentered 0.35s var(--ease); }
+    @keyframes popCentered { from { opacity: 0; transform: translate(-50%, 16px) scale(0.96); } to { opacity: 1; transform: translateX(-50%); } }
+    .panel-title { margin: 0 0 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); }
+    .only-mobile { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+    @media (min-width: 640px) { .only-mobile { display: none; } }
+    .mobile-row { display: flex; gap: 8px; }
+    #gearPanel .mobile-row .btn { width: auto; flex: 1 1 0; padding: 12px 6px; margin-bottom: 0; }
+    #keyRow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; margin-bottom: 18px; }
+    .key-btn { height: 38px; border-radius: 10px; background: var(--surface); color: var(--text); font: 700 13px 'JetBrains Mono', monospace; border: 1px solid var(--border); transition: all 0.2s var(--ease); }
+    .key-btn:hover { border-color: var(--accent); color: var(--accent-text); transform: translateY(-1px); }
+    .key-btn.active { background: var(--accent); border-color: var(--accent); color: #ffffff; box-shadow: 0 3px 10px rgba(var(--accent-rgb), 0.45); }
+    #gearFamilyContainer { margin-bottom: 18px; padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--input-bg); display: flex; flex-direction: column; align-items: center; }
+    .gear-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 10px; }
+    .theme-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 10px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    .theme-switch { display: flex; gap: 10px; }
+    .theme-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); padding: 0; transition: transform 0.2s var(--ease); }
+    .theme-dot[data-theme="indigo"] { background: #4F46E5; } .theme-dot[data-theme="red"] { background: #DA291C; } .theme-dot[data-theme="emerald"] { background: #059669; }
+    .theme-dot:hover { transform: scale(1.15); }
+    .theme-dot.active { border-color: var(--text); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.3); }
+    #gearPanel .btn { width: 100%; flex: none; margin-bottom: 10px; }
+    #gearPanel .btn:last-child { margin-bottom: 0; }
+
+    /* ---------- status toast (the reader script toggles opacity-0 / -translate-y-2 on it) ---------- */
+    #statusOverlay { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 12px; padding: 10px 20px; border-radius: 999px; background: rgba(19,20,23,0.96); backdrop-filter: blur(8px); border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.3s ease; pointer-events: none; opacity: 1; }
+    #statusOverlay.opacity-0 { opacity: 0; }
+    #statusOverlay.-translate-y-2 { transform: translate(-50%, -8px); }
+    .light #statusOverlay { background: rgba(255, 255, 255, 0.97); }
+    #statusText { font: 700 11px 'JetBrains Mono', monospace; letter-spacing: 0.12em; color: var(--accent); }
+    #statusSpinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--accent); border-top-color: transparent; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- install banner ---------- */
+    #installPrompt { position: fixed; bottom: 100px; left: 5%; width: 90%; max-width: 440px; margin: 0 auto; right: 5%; z-index: 9999; padding: 12px 14px; border-radius: 18px; background: #fff; color: #1f1f23; border: 1px solid #e3e3e6; box-shadow: 0 16px 40px rgba(0,0,0,0.3); animation: pop 0.4s var(--ease); }
+    #closeInstallBtn { position: absolute; top: 4px; right: 8px; background: none; border: none; font-size: 22px; color: #8a8a93; z-index: 10; }
+    .install-row { display: flex; align-items: center; gap: 12px; padding: 4px 22px 4px 4px; }
+    .install-row img { width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0; }
+    .install-row h6 { margin: 0; font-size: 14px; font-weight: 700; }
+    #installMessage { margin: 0; font-size: 12px; color: #6b6b75; line-height: 1.35; }
+    #installBtn { display: none; width: 100%; margin: 10px 0 0; padding: 10px 16px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.4); }
+    .bi-upload::before { content: "⬆️"; font-style: normal; } .bi-plus-square::before { content: "➕"; font-style: normal; }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 640px) {
+      .glass-nav { padding: 0 14px; height: 60px; }
+      .nav-btn { padding: 7px 10px; font-size: 11px; }
+      .wrap { padding: 14px 12px; }
+      #reader { padding: 14px 14px; border-radius: 16px; }
+      #mainFamilyDisplay { gap: 4px; padding: 8px; }
+      .family-chord { font-size: 12px; }
+      #statusOverlay { top: 68px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+    /* --- ISOLATED PRINT VIEW STYLES (Does not affect Reader) --- */
+    #printOverlay {
+        position: fixed; inset: 0; z-index: 2000;
+        background-color: var(--bg-preview);
+        color: #0f172a;
+        overflow: auto;
+        display: none; /* Hidden by default */
+        font-family: var(--font-ui);
+    }
+    #printOverlay.open { display: block; }
+
+    .print-wrap { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding: 20px; }
+
+    .print-topbar {
+        background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 18px;
+        padding: 12px 20px; display:flex; gap: 16px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07); position: sticky; top: 20px; z-index: 50;
+    }
+
+    /* Interactive Badges */
+    .meta-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+    .control-badge {
+        font-size: 0.75rem; font-weight: 700; background: #f1f5f9; color: #475569;
+        border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; align-items: center;
+    }
+    .badge-label { padding: 4px 8px; background: #e2e8f0; color: #475569; }
+    .badge-val { padding: 4px 8px; min-width: 30px; text-align: center; background: #fff; color: #0f172a; }
+    .badge-btn {
+        padding: 4px 8px; cursor: pointer; background: #fff; border-left: 1px solid #e2e8f0;
+        transition: background 0.1s; font-weight: 900; user-select: none;
+    }
+    .badge-btn:hover { background: #f8fafc; color: var(--accent); }
+
+    .print-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .p-btn { border:0; border-radius: 10px; padding: 10px 16px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; font-family: var(--font-ui); }
+    .p-btn-primary { background: var(--accent); color:#fff; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.35); }
+    .p-btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .p-btn-sec { background: #fff; color:#475569; border: 1px solid #cbd5e1; }
+    .p-btn-sec:hover { background: #f8fafc; color: #1e293b; }
+
+    /* Print Preview Areas */
+    .sheet-container { display: flex; justify-content: center; }
+    .preview-scroll { width: 100%; max-height: 80vh; overflow: auto; background: #e2e8f0; border-radius: 14px; padding: 40px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+    .print-wrap:not(.onepage) .preview-scroll { background: var(--panel-bg); padding: 20px; border: 1px solid var(--border-color); }
+    .page-preview { width: 210mm; min-height: 297mm; margin: 0 auto; background:#fff; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 15mm; overflow: hidden; position: relative; }
+
+    /* Print Header */
+    .print-header { display:none; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 2px solid #000; color:#000; }
+    .print-header .ph-title { font-family: var(--font-header); font-size: 24pt; font-weight: 900; line-height: 1.1; margin-bottom: 4px; }
+    .print-header .ph-sub { font-family: var(--font-ui); font-size: 10pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #444; }
+
+    /* Print Reader Styles (Isolated) */
+    .print-reader {
+        font-family: var(--font-mono);
+        white-space: pre-wrap;
+        font-size: var(--print-text-size);
+        line-height: var(--print-line-height);
+        color: #000 !important;
+        width:100%;
+    }
+
+    /* Replicate structure for Print context */
+    .print-reader .reader-line {
+        display:block;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        white-space: pre-wrap;
+        margin-bottom: 0.2em;
+    }
+
+    .print-reader .chord {
+        color: var(--print-chord-color) !important;
+        font-weight: 700;
+        font-size: var(--print-chord-size);
+        font-family: var(--font-mono);
+        display: inline-block;
+        margin-right: 0.3ch;
+    }
+
+    .print-reader .section-label {
+        color:#000 !important;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 0.8em;
+        letter-spacing: 0.05em;
+        display: inline-block;
+        margin-top: 1.5em;
+        border-bottom: 1px solid #ccc;
+        margin-bottom: 0.5em;
+    }
+
+    /* Print Columns */
+    .cols1 .print-reader { column-count:1; column-gap: var(--print-col-gap); }
+    .cols2 .print-reader { column-count:2; column-gap: var(--print-col-gap); }
+    .cols3 .print-reader { column-count:3; column-gap: 34px; }
+    .onepage .print-reader { column-count: 2 !important; column-gap: var(--print-col-gap) !important; }
+
+    #pageBox { display: none; }
+    .onepage #pageBox { display: block; }
+    .onepage #scrollBox { display: none; }
+    .onepage .print-header { display:block; }
+
+    /* Toggle Switch */
+    .toggle-label { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+    .toggle-label input { width: 16px; height: 16px; accent-color: var(--accent); }
+    .toggle-label:has(input:checked) { background: rgba(var(--accent-rgb), 0.08); border-color: rgba(var(--accent-rgb), 0.4); box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.12); }
+    .toggle-label span { font-weight: 700; font-size: 0.85rem; color: #475569; }
+    .toggle-label:has(input:checked) span { color: #1e293b; }
+
+    @page { size: A4; margin: 10mm; }
+
+    @media print {
+        body > *:not(#printOverlay) { display: none !important; }
+        #printOverlay { display: block !important; position: absolute; background: white; overflow: visible; }
+        .print-topbar, .print-actions { display:none !important; }
+        #scrollBox { display:none !important; }
+        #pageBox { display:block !important; box-shadow:none; padding:0; width:100%; height:auto; margin:0; overflow: visible; }
+        .print-header { display:block !important; }
+        .print-reader { color:#000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .print-reader .chord { color: #b91c1c !important; }
+    }
+    /* ---------- PRACTICE: search box + suggestions (same look as the song picker) ---------- */
+    .pick { min-width: 0; position: relative; display: flex; align-items: center; gap: 8px; flex: 1 1 340px; max-width: 580px; }
+    #searchInput { flex: 0 0 38%; min-width: 0; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font: 600 14px var(--font-ui); outline: none; box-shadow: var(--shadow); transition: border-color 0.2s, box-shadow 0.2s; }
+    #searchInput::placeholder { color: var(--text-muted); font-weight: 500; }
+    #searchInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2); }
+    .pick #songSelect { flex: 1 1 0; min-width: 0; max-width: none; }
+    #searchSuggestions { position: absolute; top: calc(100% + 8px); left: 0; width: min(100%, 400px); max-height: 300px; overflow-y: auto; z-index: 100; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 16px 40px rgba(0,0,0,0.35); animation: pop 0.25s var(--ease); }
+    #searchSuggestions .suggestion-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    #searchSuggestions .suggestion-item:last-child { border-bottom: none; }
+    #searchSuggestions .suggestion-item:hover { background: rgba(var(--accent-rgb), 0.12); }
+    #searchSuggestions .suggestion-item span:first-child { font-size: 13px; font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #searchSuggestions .suggestion-item span:last-child { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); flex-shrink: 0; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #searchSuggestions > div:not(.suggestion-item) { padding: 16px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    @media (max-width: 640px) { .pick { flex: 1 1 100%; max-width: none; } #searchInput { flex-basis: 36%; } #searchSuggestions { width: 100%; } }
+  </style>
+</head>
+<body>
+
+<div id="statusOverlay" class="opacity-0 -translate-y-2">
+  <div id="statusSpinner"></div>
+  <span id="statusText">LOADING...</span>
+</div>
+
+<nav class="glass-nav">
+  <div class="nav-left">
+    <div class="korLogo"><img src="https://lh3.googleusercontent.com/d/1iLMCP2wh8e4BdxM_rds3W1GxkX0LVUqi=s220" alt="K" /></div>
+    <div class="nav-title">
+      <h1 id="titleEl">Loading...</h1>
+      <p id="artistEl"></p>
+    </div>
+  </div>
+
+  <div class="nav-right">
+    <div id="syncStatus"></div>
+    <a href="./" class="nav-btn green">🎸 Friday Service</a>
+    <button id="openSetlistBtn" class="nav-btn primary">Setlist</button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="song-bar">
+    <div class="pick">
+      <input type="text" id="searchInput" placeholder="Search…" autocomplete="off" aria-label="Search songs by title or artist" />
+      <div id="searchSuggestions" class="hidden"></div>
+      <select id="songSelect" aria-label="Choose song"></select>
+    </div>
+    <button id="keyDisplayBtn" title="Change Key">
+      Key <span id="transKeyEl">—</span>
+    </button>
+  </div>
+
+  <div id="mainFamilyDisplay"></div>
+  <div id="capoDisplay"></div>
+  <div id="reader" class="reader"></div>
+</main>
+
+<div class="float-dock" id="floatDock">
+  <button id="prevSongBtn" class="dock-btn" title="Previous song">⟨</button>
+  <button id="nextSongBtn" class="dock-btn" title="Next song">⟩</button>
+  <div class="dock-sep dock-desktop"></div>
+  <button id="fontMinusBtn" class="dock-btn dock-desktop" title="Smaller text">A-</button>
+  <div class="dock-sep dock-desktop"></div>
+  <button id="fontPlusBtn" class="dock-btn dock-desktop" title="Bigger text">A+</button>
+  <div class="dock-sep dock-desktop"></div>
+  <button id="colsToggleBtn" class="dock-btn dock-desktop small-text" title="1 or 2 columns">1 | 2</button>
+  <div class="dock-sep dock-desktop"></div>
+  <button id="themeToggleBtn" class="dock-btn" title="Light / dark" style="font-size:18px">🌙</button>
+  <div class="dock-sep dock-desktop"></div>
+  <button id="gearBtn" class="dock-btn" title="Settings" style="font-size:18px">⚙️</button>
+</div>
+
+<div id="setlistModal" class="sheet-overlay hidden">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div>
+        <h3>Worship Arrangement</h3>
+        <div class="sheet-sub" id="setlistStats"></div>
+      </div>
+      <button id="xCloseSetlistBtn" class="x-close" aria-label="Close">✕</button>
+    </div>
+    <div id="setlistList"></div>
+    <div class="sheet-foot">
+      <button id="cancelSetlistBtn" class="btn">Cancel</button>
+      <button id="saveSetlistBtn" class="btn primary">Save Arrangement</button>
+    </div>
+  </div>
+</div>
+
+<div id="gearPanel" class="hidden">
+  <div class="only-mobile">
+    <h3 class="panel-title">Display</h3>
+    <div class="mobile-row">
+      <button class="btn font-minus-mobile">A-</button>
+      <button class="btn font-plus-mobile">A+</button>
+      <button class="btn cols-toggle-mobile" style="font-size:12px">1 | 2</button>
+    </div>
+  </div>
+  <div class="theme-row"><span>🎨 Colour</span>
+    <span class="theme-switch" id="accentSwitch" role="group" aria-label="Colour theme">
+      <button type="button" class="theme-dot" data-theme="indigo" aria-label="Indigo theme"></button>
+      <button type="button" class="theme-dot" data-theme="red" aria-label="Red theme"></button>
+      <button type="button" class="theme-dot" data-theme="emerald" aria-label="Emerald theme"></button>
+    </span>
+  </div>
+  <h3 class="panel-title">Transposition</h3>
+  <div id="keyRow"></div>
+  <div id="gearFamilyContainer">
+    <div class="gear-label">Key Chord Family</div>
+    <div id="gearFamilyDisplay"></div>
+  </div>
+  <button id="openPrintBtn" class="btn">🖨️ Open Print View</button>
+  <button id="closeBtn" class="btn">Close Settings</button>
+</div>
+
+<div id="printOverlay">
+  <div class="print-wrap cols1" id="printWrap">
+    <div class="print-topbar">
+      <div>
+        <h1 id="phTitleMain" style="margin:0; font-size:1.25rem; font-weight:800;">Print View</h1>
+
+        <div class="meta-badges">
+          <div class="control-badge">
+             <div class="badge-label">Key</div>
+             <div class="badge-val" id="phKeyEl">—</div>
+          </div>
+
+          <div class="control-badge">
+             <div class="badge-label">Cols</div>
+             <div class="badge-val" id="phColsEl">1</div>
+             <div class="badge-btn" onclick="cyclePrintCols()">↺</div>
+          </div>
+
+          <div class="control-badge">
+             <div class="badge-label">Font</div>
+             <div class="badge-btn" onclick="adjustPrintFont(-1)">-</div>
+             <div class="badge-val" id="phFontEl">12pt</div>
+             <div class="badge-btn" onclick="adjustPrintFont(1)">+</div>
+          </div>
+        </div>
+      </div>
+
+<div class="print-actions">
+        <div style="display:flex; gap: 8px; margin-right: 8px;">
+            <button class="p-btn p-btn-sec" onclick="printPrevSong()" id="printPrevBtn" style="padding: 8px 14px; display: flex; align-items: center; gap: 6px;" title="Previous Song">
+                <span style="font-size: 1.2em; line-height: 1;">⟨</span> Previous
+            </button>
+            <button class="p-btn p-btn-sec" onclick="printNextSong()" id="printNextBtn" style="padding: 8px 14px; display: flex; align-items: center; gap: 6px;" title="Next Song">
+                Next <span style="font-size: 1.2em; line-height: 1;">⟩</span>
+            </button>
+        </div>
+
+        <label class="toggle-label">
+          <input id="onePageToggle" type="checkbox" />
+          <span>One-page A4</span>
+        </label>
+        <button class="p-btn p-btn-sec" onclick="closePrintView()">Back</button>
+        <button class="p-btn p-btn-primary" onclick="triggerNativePrint()">Print PDF</button>
+      </div>
+    </div>
+
+    <div class="sheet-container">
+      <div id="pageBox" class="page-preview">
+        <div class="print-header">
+          <div class="ph-title" id="printTitlePage">Song Title</div>
+          <div class="ph-sub" id="printSubPage">Artist • Key: C</div>
+        </div>
+        <div id="printReaderPage" class="print-reader"></div>
+      </div>
+
+      <div id="scrollBox" class="preview-scroll">
+        <div id="printReaderScroll" class="print-reader"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script> 
+/* =========================
+   Reader — Firebase-Only Edition
+========================= */
+
+// --- MUSIC THEORY ENGINE ---
+const KEY_FAMILIES = {
+    "C":  ["C", "Dm", "Em", "F", "G", "Am", "Bdim"], "Db": ["Db", "Ebm", "Fm", "Gb", "Ab", "Bbm", "Cdim"], "C#": ["Db", "Ebm", "Fm", "Gb", "Ab", "Bbm", "Cdim"], 
+    "D":  ["D", "Em", "F#m", "G", "A", "Bm", "C#dim"], "Eb": ["Eb", "Fm", "Gm", "Ab", "Bb", "Cm", "Ddim"], "D#": ["Eb", "Fm", "Gm", "Ab", "Bb", "Cm", "Ddim"], 
+    "E":  ["E", "F#m", "G#m", "A", "B", "C#m", "D#dim"], "F":  ["F", "Gm", "Am", "Bb", "C", "Dm", "Edim"], "Gb": ["Gb", "Abm", "Bbm", "Cb", "Db", "Ebm", "Fdim"],
+    "F#": ["F#", "G#m", "A#m", "B", "C#", "D#m", "E#dim"], "G":  ["G", "Am", "Bm", "C", "D", "Em", "F#dim"], "Ab": ["Ab", "Bbm", "Cm", "Db", "Eb", "Fm", "Gdim"],
+    "G#": ["Ab", "Bbm", "Cm", "Db", "Eb", "Fm", "Gdim"], "A":  ["A", "Bm", "C#m", "D", "E", "F#m", "G#dim"], "Bb": ["Bb", "Cm", "Dm", "Eb", "F", "Gm", "Adim"],
+    "A#": ["Bb", "Cm", "Dm", "Eb", "F", "Gm", "Adim"], "B":  ["B", "C#m", "D#m", "E", "F#", "G#m", "A#dim"], "Cb": ["B", "C#m", "D#m", "E", "F#", "G#m", "A#dim"] 
+};
+const CAPO_DATA = {
+    "A":  { text: "use Capo 'Fret' 2", key: "G" }, "Bb": { text: "use Capo 'Fret' 3", key: "G" }, "A#": { text: "use Capo 'Fret' 3", key: "G" },
+    "B":  { text: "use Capo 'Fret' 4", key: "G" }, "C":  { text: "Open (C) or use Capo 'Fret' 5", key: "G" }, "Db": { text: "use Capo 'Fret' 1", key: "C" },
+    "C#": { text: "use Capo 'Fret' 1", key: "C" }, "D":  { text: "use Capo 'Fret' 2", key: "C" }, "Eb": { text: "use Capo 'Fret' 3", key: "C" },
+    "D#": { text: "use Capo 'Fret' 3", key: "C" }, "E":  { text: "use Capo 'Fret' 4", key: "C" }, "F":  { text: "use Capo 'Fret' 5 (C) or Capo 'Fret' 1", key: "E" },
+    "Gb": { text: "use Capo 'Fret' 2", key: "E" }, "F#": { text: "use Capo 'Fret' 2", key: "E" }, "G":  { text: "Open", key: "G" },
+    "Ab": { text: "use Capo 'Fret' 1", key: "G" }, "G#": { text: "use Capo 'Fret' 1", key: "G" }
+};
+const FAMILY_DEGREES = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
+
+// --- STORAGE KEYS (PERSONAL ISOLATION) ---
+const READER_STORAGE_KEY = 'personal_reader_data_v1';
+const ALL_SONGS_KEY = 'personal_all_songs';
+const PLAYLIST_KEY = 'personal_playlist';
+const CURRENT_ID_KEY = 'personal_current_song_id';
+const THEME_PREF_KEY = 'personal_reader_theme';
+const COLS_PREF_KEY  = 'personal_reader_columns';
+
+// --- HYBRID BRIDGE FUNCTIONS (Called by Firebase) ---
+window.updateLocalSetlist = function(newPlaylist) {
+    setSyncStatus('Updating Setlist...', 0);
+    if(!Array.isArray(newPlaylist)) return;
+    
+    // Accept Firebase payload directly (No filtering)
+    playlist = newPlaylist;
+    try { localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist)); } catch(e){}
+    
+    // Notice we removed normalizePlaylist() here to prevent accidental deletion
+    populateDropdown();
+    
+    if(currentId && !playlist.includes(currentId)) currentId = playlist[0] || null;
+    if(!currentId && playlist.length > 0) currentId = playlist[0];
+    if(currentId) loadSongById(currentId);
+    
+    setTimeout(() => {
+        setSyncStatus('Setlist Updated', null); 
+        setTimeout(()=>setSyncStatus(''), 2000);
+    }, 600);
+};
+
+window.updateLocalSong = function(id, data) {
+    setSyncStatus('Receiving Edit...', 0);
+    const idx = window.allSongs.findIndex(s => s.id === id);
+    if(idx > -1) { window.allSongs[idx] = { ...window.allSongs[idx], ...data }; } 
+    else { window.allSongs.push(data); }
+    try { localStorage.setItem(ALL_SONGS_KEY, JSON.stringify(window.allSongs)); } catch(e){}
+    
+    if(currentId === id) { 
+        loadSongById(id); 
+        setTimeout(() => {
+            setSyncStatus('Live Edit Received', null); 
+            setTimeout(()=>setSyncStatus(''), 2000);
+        }, 600); 
+    }
+};
+
+window.updatePublicLibrary = function(firebaseSongs) {
+    // Hidden the sync status UI since it's instant now
+    if(!firebaseSongs) return;
+    
+    // Load directly into active memory
+    window.allSongs = Object.values(firebaseSongs);
+    
+    // 🔥 LOCAL STORAGE SAVING COMPLETELY DELETED HERE 🔥
+    
+    populateDropdown();
+    
+    // Auto-load the current song, or the very first song if the app just opened
+    if(currentId) {
+        loadSongById(currentId);
+    } else if (window.allSongs.length > 0) {
+        loadSongById(window.allSongs[0].id);
+    }
+};
+
+// --- APP STATE (NO MORE HEAVY CACHING) ---
+// We start with an empty array. It will fill instantly when Firebase connects!
+window.allSongs = []; 
+let playlist = JSON.parse(localStorage.getItem('personal_playlist') || '[]'); 
+let currentId = localStorage.getItem('personal_current_song_id') || null;
+let trans = 0;
+let fontSizePx = 20;
+const FONT_MIN = 12; const FONT_MAX = 42;
+let playlistDraft = [];
+
+// --- DOM ELEMENTS ---
+const readerEl = document.getElementById('reader');
+const titleEl = document.getElementById('titleEl');
+const artistEl = document.getElementById('artistEl');
+const transKeyEl = document.getElementById('transKeyEl');
+const keyDisplayBtn = document.getElementById('keyDisplayBtn');
+const syncStatus = document.getElementById('syncStatus');
+const songSelect = document.getElementById('songSelect');
+const gearBtn = document.getElementById('gearBtn');
+const gearPanel = document.getElementById('gearPanel');
+const keyRow = document.getElementById('keyRow');
+const mainFamilyDisplay = document.getElementById('mainFamilyDisplay');
+const gearFamilyDisplay = document.getElementById('gearFamilyDisplay');
+const capoDisplay = document.getElementById('capoDisplay');
+const floatDock = document.getElementById('floatDock');
+const openSetlistBtn = document.getElementById('openSetlistBtn');
+const setlistModal = document.getElementById('setlistModal');
+const setlistListEl = document.getElementById('setlistList');
+const saveSetlistBtn = document.getElementById('saveSetlistBtn');
+const cancelSetlistBtn = document.getElementById('cancelSetlistBtn');
+const setlistStatsEl = document.getElementById('setlistStats');
+const xCloseSetlistBtn = document.getElementById('xCloseSetlistBtn');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+const searchInput = document.getElementById('searchInput');
+const searchSuggestions = document.getElementById('searchSuggestions');
+
+const KEY_BUTTONS = ['A','A#','Bb','B','C','C#','Db','D','D#','Eb','E','Fb','F','F#','Gb','G','G#','Ab'];
+const NOTES_SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTES_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const NOTE_TO_INDEX = {C:0,'B#':0,'C#':1,'Db':1,D:2,'D#':3,'Eb':3,E:4,'Fb':4,F:5,'E#':5,'F#':6,'Gb':6,G:7,'G#':8,'Ab':8,A:9,'A#':10,'Bb':10,B:11,'Cb':11};
+const CHORD_RE = /\b([A-G](?:#|b)?)(?:(maj|min|m|dim|aug|sus|add)?(?:\d+)?(?:[#b+\-])?)?(?:\/([A-G](?:#|b)?))?(?:\s|$|(?=\())/g;
+
+// --- HELPERS ---
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function transposeRoot(root, semitones, targetKeyName){
+  const rootStr = (root||'').replace('♯','#').replace('♭','b');
+  const idx = NOTE_TO_INDEX[rootStr];
+  if(idx == null) return root;
+  const song = window.allSongs.find(x => x.id === currentId);
+  const currentKey = song?.key || guessOriginalKeyFromContent(song?.content) || 'C';
+  const currentKeyIdx = NOTE_TO_INDEX[currentKey.replace('♯','#').replace('♭','b')];
+  let degree = (idx - currentKeyIdx) % 12;
+  if(degree < 0) degree += 12;
+  const targetKey = targetKeyName.replace('♯','#').replace('♭','b');
+  const family = KEY_FAMILIES[targetKey];
+  if(!family) {
+    let ni = (idx + semitones) % 12; if(ni < 0) ni += 12;
+    return targetKey.includes('b') ? NOTES_FLAT[ni] : NOTES_SHARP[ni];
+  }
+  const degreeMap = { 0:0, 2:1, 4:2, 5:3, 7:4, 9:5, 11:6 };
+  if(degreeMap[degree] !== undefined) {
+      const rawChord = family[degreeMap[degree]];
+      return rawChord.replace(/(m|dim)$/, '');
+  }
+  let ni = (idx + semitones) % 12; if(ni < 0) ni += 12;
+  return targetKey.includes('b') ? NOTES_FLAT[ni] : NOTES_SHARP[ni];
+}
+function transposeText(text, semitones, targetKeyName){
+  if(typeof semitones !== 'number' || semitones === 0) return text;
+  return text.replace(CHORD_RE, (m, root, mod, slash) => {
+    const nr = transposeRoot(root, semitones, targetKeyName);
+    // FIX: the match may end with one whitespace char (or newline). Keep it aside so it is neither lost nor counted as part of the bass note.
+    const tail = /\s$/.test(m) ? m.slice(-1) : '';
+    let suffix = (tail ? m.slice(0, -1) : m).slice(root.length);
+    if (slash) suffix = suffix.slice(0, -(slash.length + 1));
+    const bass = slash ? '/' + transposeRoot(slash, semitones, targetKeyName) : '';
+    return nr + suffix + bass + tail;
+  });
+}
+function fixDoubleSharps(note){
+  if(!note) return note;
+  return note.replace(/([A-G])##/g, (match, root) => {
+    const enh = { C: "D", D: "E", E: "F#", F: "G", G: "A", A: "B", B: "C#" };
+    return enh[root] || match;
+  });
+}
+function highlightHtml(text, targetKeyName, semitones){
+  let t = text || '';
+  if(typeof semitones === 'number' && semitones !== 0) t = transposeText(t, semitones, targetKeyName);
+  let escaped = escapeHtml(t);
+  escaped = escaped.replace(CHORD_RE, (m, root, mod, slash) => { return `<span class="chord">${fixDoubleSharps(m)}</span>`; });
+  const sectionRegex = /\b(Verse\s*\d*|Chorus\s*\d*|Bridge|Pre[-\s]?Chorus|Post[-\s]?Chorus|Intro|Interlude|Instrumental|Tag|Ending|Refrain|Repeat|Outro)\b/gi;
+  escaped = escaped.replace(sectionRegex, (label) => `<span class="section-label">${label}</span>`);
+  return escaped;
+}
+function setSyncStatus(msg, percent = null){
+  if(syncStatus) { syncStatus.textContent = msg ? `• ${msg}${percent !== null ? ` ${percent}%` : ''}` : ''; }
+  const overlay = document.getElementById('statusOverlay');
+  const textEl = document.getElementById('statusText');
+  const spinner = document.getElementById('statusSpinner');
+  if(!overlay || !textEl || !spinner) return;
+  if(!msg){ overlay.classList.add('opacity-0'); overlay.classList.add('-translate-y-2'); return; }
+  overlay.classList.remove('opacity-0'); overlay.classList.remove('-translate-y-2');
+  let text = msg; if(percent !== null) text += ` ${percent}%`;
+  textEl.textContent = text.toUpperCase();
+  const lowerMsg = msg.toLowerCase();
+  const isDone = lowerMsg.includes('updated') || lowerMsg.includes('synced') || lowerMsg.includes('received') || lowerMsg.includes('saved');
+  if(isDone){ spinner.style.display = 'none'; textEl.style.color = 'var(--section)'; } 
+  else { spinner.style.display = 'block'; textEl.style.color = 'var(--accent)'; }
+}
+function getSongSettings(songId){ return JSON.parse(localStorage.getItem('song_settings_' + songId) || '{}'); }
+function saveSongSettings(songId, settings){ localStorage.setItem('song_settings_' + songId, JSON.stringify(settings)); }
+
+function buildKeyButtons(){
+  keyRow.innerHTML = '';
+  KEY_BUTTONS.forEach(keyName => {
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'key-btn'; btn.dataset.key = keyName; btn.textContent = keyName;
+    btn.addEventListener('click', () => onKeySelected(keyName)); keyRow.appendChild(btn);
+  });
+}
+function setActiveKeyButton(name){
+  const buttons = keyRow.querySelectorAll('.key-btn');
+  buttons.forEach(b => { if(b.dataset.key === name) b.classList.add('active'); else b.classList.remove('active'); });
+}
+function applyFontSize(size){
+  fontSizePx = Math.max(FONT_MIN, Math.min(FONT_MAX, size|0));
+  readerEl.style.fontSize = fontSizePx + 'px';
+  if(currentId){ const st = getSongSettings(currentId); st.fontSize = fontSizePx; saveSongSettings(currentId, st); }
+}
+function renderContent(text, targetKey){
+  const html = highlightHtml(text, targetKey, trans);
+  
+  // 🧠 THE SAFE SMART CUT: Line-by-Line, gluing chords and headers to lyrics
+  const lines = html.split(/\n/);
+  let htmlWithDivs = '';
+  
+  for (let i = 0; i < lines.length; i++) {
+      let line = lines[i] || ' ';
+      let inlineStyle = ""; 
+      
+      // If this line has a Chord or a Section Label, glue it to the next line!
+      if (line.includes('class="chord"') || line.includes('class="section-label"')) {
+          inlineStyle = "break-after: avoid; page-break-after: avoid;";
+      }
+      
+      if (inlineStyle) {
+          htmlWithDivs += `<div class="reader-line" style="${inlineStyle}">${line}</div>`;
+      } else {
+          htmlWithDivs += `<div class="reader-line">${line}</div>`;
+      }
+  }
+  
+  readerEl.innerHTML = htmlWithDivs;
+}
+function guessOriginalKeyFromContent(text){
+  if(!text) return null;
+  const counts = {}; let m; CHORD_RE.lastIndex = 0;
+  while((m = CHORD_RE.exec(text)) !== null){
+    const root = m[1]; if(!root) continue;
+    const normalized = root.replace('♯','#').replace('♭','b');
+    if(NOTE_TO_INDEX[normalized] == null) continue;
+    counts[normalized] = (counts[normalized]||0)+1;
+  }
+  const keys = Object.keys(counts); if(keys.length === 0) return null;
+  let best = null, bestCnt = -1;
+  for(const k of keys){ if(counts[k] > bestCnt){ best = k; bestCnt = counts[k]; } }
+  return best;
+}
+function computeSemitoneShift(originalKeyName, targetKeyName){
+  const o = (originalKeyName||'').replace('♯','#').replace('♭','b');
+  const t = (targetKeyName||'').replace('♯','#').replace('♭','b');
+  const oi = NOTE_TO_INDEX[o]; const ti = NOTE_TO_INDEX[t];
+  if(oi == null || ti == null) return 0;
+  let delta = ti - oi; if(delta > 6) delta -= 12; if(delta < -6) delta += 12;
+  return delta;
+}
+function renderCapoSuggestion(keyName) {
+    if(!capoDisplay) return;
+    const normalized = (keyName||'').replace('♯','#').replace('♭','b');
+    const data = CAPO_DATA[normalized];
+    if(!data) { capoDisplay.innerHTML = ''; return; }
+    capoDisplay.innerHTML = `<span class="whitespace-nowrap">🎸  ${data.text}</span><span style="color:var(--text-muted); font-weight:normal;" class="hidden sm:inline">|</span><span style="color:var(--text-muted); font-weight:normal;">(Guitarist can play Key of ${data.key})</span>`;
+}
+function renderChordFamily(keyName) {
+    const targets = [mainFamilyDisplay, gearFamilyDisplay];
+    const normalized = (keyName||'').replace('♯','#').replace('♭','b');
+    const family = KEY_FAMILIES[normalized] || [];
+    let html = '';
+    if (family.length === 0) { html = '<span class="text-xs text-muted w-full text-center py-1 italic opacity-50">Select a standard key to see family</span>'; } 
+    else {
+        html = family.map((chord, i) => {
+            const degree = FAMILY_DEGREES[i] || ''; const isPrimary = (i === 0 || i === 3 || i === 4); const isDim = (i === 6);
+            let chordClass = 'family-chord'; if (isPrimary) chordClass += ' primary'; if (isDim) chordClass += ' dim';
+            return `<div class="family-pill"><span class="family-degree">${degree}</span><span class="${chordClass}">${chord}</span></div>`;
+        }).join('');
+    }
+    targets.forEach(el => { if(el) el.innerHTML = html; });
+}
+function updateTransposeDisplay(){
+  const s = window.allSongs.find(x => x.id === currentId);
+  if(!s){ transKeyEl.textContent = '—'; setActiveKeyButton(null); renderChordFamily(null); renderCapoSuggestion(null); return; }
+  const settings = getSongSettings(currentId) || {};
+  const orig = s.key || s.originalKey || settings.originalKey || guessOriginalKeyFromContent(s.content) || 'C';
+  let targetKey = settings.chosenKey || (trans === 0 ? orig : transposeRoot(orig, trans, 'C'));   // FIX: trans===0 -> the song's own key (was always shown as C)
+  transKeyEl.textContent = targetKey || '—';
+  setActiveKeyButton(targetKey); renderChordFamily(targetKey); renderCapoSuggestion(targetKey); renderContent(s.content || '', targetKey);
+}
+function onKeySelected(keyName){
+  const s = window.allSongs.find(x => x.id === currentId); if(!s) return;
+  let settings = getSongSettings(currentId) || {};
+  let orig = s.key || s.originalKey || settings.originalKey || guessOriginalKeyFromContent(s.content) || 'C';
+  trans = computeSemitoneShift(orig, keyName);
+  settings.transpose = trans; settings.chosenKey = keyName; settings.originalKey = orig;
+  saveSongSettings(currentId, settings);
+  updateTransposeDisplay();
+}
+
+// --- FIX: Normalize Playlist strictly accepts the live Setlist ---
+function normalizePlaylist(){
+  if(!Array.isArray(playlist)) playlist = [];
+  if(!Array.isArray(window.allSongs)) window.allSongs = [];
+  
+  if(!currentId && playlist.length > 0) currentId = playlist[0];
+  if(currentId && !playlist.includes(currentId) && playlist.length > 0) currentId = playlist[0];
+  try { localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist)); } catch(e){}
+  try { localStorage.setItem(CURRENT_ID_KEY, currentId || ''); } catch(e){}
+}
+
+function populateDropdown(searchTerm = '') {
+  if (!songSelect) return;
+  songSelect.innerHTML = '';
+  const lowerTerm = searchTerm.toLowerCase().trim();
+  
+  // 1. Filter based on what you typed (checks both Title and Artist!)
+  let filteredSongs = window.allSongs.filter(s => 
+      (s.title || '').toLowerCase().includes(lowerTerm) || 
+      (s.artist || '').toLowerCase().includes(lowerTerm)
+  );
+
+  // 2. SMART SORT: Alphabetical, but exact start matches jump to the top!
+  filteredSongs.sort((a, b) => {
+      const aTitle = (a.title || '').toLowerCase();
+      const bTitle = (b.title || '').toLowerCase();
+      
+      // If there is a search term, prioritize titles that START with it
+      if (lowerTerm) {
+          const aStarts = aTitle.startsWith(lowerTerm);
+          const bStarts = bTitle.startsWith(lowerTerm);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+      }
+      
+      // Otherwise, just sort alphabetically
+      return aTitle.localeCompare(bTitle);
+  });
+
+  // 3. Fill the dropdown with the smart-sorted results
+  filteredSongs.forEach(s => {
+    const opt = document.createElement('option'); 
+    opt.value = s.id; 
+    opt.textContent = s.title || 'Untitled';
+    if(s.id === currentId) opt.selected = true; 
+    songSelect.appendChild(opt);
+  });
+
+  // 4. Update the playlist so Next/Prev arrows follow your search results
+  playlist = filteredSongs.map(s => s.id);
+}
+
+function loadSongById(id){
+  const s = window.allSongs.find(x => x.id === id); if(!s) return false;
+  currentId = id; try { localStorage.setItem(CURRENT_ID_KEY, id); } catch(e){}
+  const settings = getSongSettings(id) || {};
+  trans = Number(settings.transpose || 0);
+  const savedSize = (settings.fontSize != null) ? Number(settings.fontSize) : fontSizePx;
+  applyFontSize(savedSize);
+  titleEl.textContent = s.title || 'Reader'; artistEl.textContent = s.artist || '';
+  updateTransposeDisplay(); return true;
+}
+function ensureContentFallback(){
+  const readerPayload = JSON.parse(localStorage.getItem(READER_STORAGE_KEY) || 'null');
+  const allHaveContent = Array.isArray(window.allSongs) && window.allSongs.length>0 && window.allSongs.some(s => typeof s.content === 'string' && s.content.trim().length>0);
+  if((!Array.isArray(window.allSongs) || window.allSongs.length===0 || !allHaveContent) && readerPayload){
+    const id = 'reader_single_' + Date.now();
+    window.allSongs = [{ id, title: readerPayload.title || 'Untitled', artist: readerPayload.artist || '', content: readerPayload.content || '', key: readerPayload.key || undefined }];
+    playlist = [id]; currentId = id; trans = Number(readerPayload.transpose||0);
+    try{ localStorage.setItem(ALL_SONGS_KEY, JSON.stringify(window.allSongs)); localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist)); localStorage.setItem(CURRENT_ID_KEY, currentId); }catch(e){}
+  }
+}
+
+function applyColumns(n){
+  const readerDiv = document.getElementById('reader');
+  const cols = (String(n) === '2') ? 2 : 1;
+  if(cols === 2) readerDiv.classList.add('two-col'); else readerDiv.classList.remove('two-col');
+  try{ localStorage.setItem(COLS_PREF_KEY, String(cols)); }catch(e){}
+}
+function toggleColumns(){ const readerDiv = document.getElementById('reader'); const isTwo = readerDiv.classList.contains('two-col'); applyColumns(isTwo ? 1 : 2); }
+function applyTheme(mode){
+  const m = (mode === 'light') ? 'light' : 'dark';
+  if(m === 'light'){ document.body.classList.add('light'); themeToggleBtn.textContent = '☀️'; }
+  else{ document.body.classList.remove('light'); themeToggleBtn.textContent = '🌙'; }
+  try{ localStorage.setItem(THEME_PREF_KEY, m); }catch(e){}
+}
+
+function openSetlistModal(){
+  playlistDraft = Array.isArray(playlist) ? playlist.slice() : [];
+  const ids = new Set(window.allSongs.map(s => s && s.id).filter(Boolean));
+  playlistDraft = playlistDraft.filter(id => ids.has(id));
+  renderSetlistModal();
+  setlistModal.classList.remove('hidden'); setlistModal.setAttribute('aria-hidden', 'false'); setlistModal.style.display = '';
+}
+function closeSetlistModal(){ setlistModal.classList.add('hidden'); setlistModal.setAttribute('aria-hidden', 'true'); setlistModal.style.display = ''; }
+function renderSetlistModal(){
+  if(setlistStatsEl) setlistStatsEl.textContent = `${playlistDraft.length} songs`;
+  setlistListEl.innerHTML = '';
+  playlistDraft.forEach((id, idx) => {
+    const song = window.allSongs.find(s => s && s.id === id); if(!song) return;
+    const card = document.createElement('div'); card.className = 'songCard'; card.dataset.id = id;
+    card.innerHTML = `<div class="setlistRow"><div class="font-mono font-bold w-6 text-right" style="color: var(--text-muted)">${idx + 1}.</div><div class="flex-1 min-w-0"><div class="font-bold truncate" style="color: var(--text)">${escapeHtml(song.title || 'Untitled')}</div><div class="text-xs truncate" style="color: var(--text-muted)">${escapeHtml(song.artist || '')}</div></div><div class="btnGroup"><button class="moveBtn moveUpBtn" title="Move up">▲</button><button class="moveBtn moveDownBtn" title="Move down">▼</button><button class="removeBtn" title="Remove from setlist">✕</button></div></div>`;
+    const upBtn = card.querySelector('.moveUpBtn'); const downBtn = card.querySelector('.moveDownBtn');
+    if(upBtn){ upBtn.disabled = (idx === 0); upBtn.style.opacity = (idx === 0) ? '0.3' : '1'; upBtn.addEventListener('click', (e)=>{ e.preventDefault(); if(idx <= 0) return; const temp = playlistDraft[idx-1]; playlistDraft[idx-1] = playlistDraft[idx]; playlistDraft[idx] = temp; renderSetlistModal(); }); }
+    if(downBtn){ downBtn.disabled = (idx === playlistDraft.length - 1); downBtn.style.opacity = (idx === playlistDraft.length - 1) ? '0.3' : '1'; downBtn.addEventListener('click', (e)=>{ e.preventDefault(); if(idx >= playlistDraft.length - 1) return; const temp = playlistDraft[idx+1]; playlistDraft[idx+1] = playlistDraft[idx]; playlistDraft[idx] = temp; renderSetlistModal(); }); }
+    card.querySelector('.removeBtn').addEventListener('click', (e)=>{ e.preventDefault(); playlistDraft = playlistDraft.filter(x => x !== id); renderSetlistModal(); });
+    setlistListEl.appendChild(card);
+  });
+}
+
+// Cleaned up event listeners (Read-Only/Local Sync Edition)
+openSetlistBtn.addEventListener('click', () => { openSetlistModal(); });
+cancelSetlistBtn.addEventListener('click', () => closeSetlistModal());
+xCloseSetlistBtn.addEventListener('click', () => closeSetlistModal());
+setlistModal.addEventListener('click', (e) => { if(e.target === setlistModal) closeSetlistModal(); });
+
+// --- SEARCH BAR LISTENER ---
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        populateDropdown(e.target.value);
+        
+        // Auto-load the first result if you type something and songs match
+        if (playlist.length > 0 && e.target.value.trim() !== '') {
+            loadSongById(playlist[0]);
+        }
+    });
+}
+
+// --- 🧠 SMART SEARCH ENGINE ---
+if (searchInput && searchSuggestions) {
+    // 1. Listen as you type
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase().trim();
+        
+        // Hide if empty
+        if (!term) {
+            searchSuggestions.classList.add('hidden');
+            return;
+        }
+
+        // 2. Filter & SMART SORT Logic
+        const results = window.allSongs.filter(s => 
+            (s.title || '').toLowerCase().includes(term) || 
+            (s.artist || '').toLowerCase().includes(term)
+        ).sort((a, b) => {
+            const aTitle = (a.title || '').toLowerCase();
+            const bTitle = (b.title || '').toLowerCase();
+            
+            // Priority 1: Exact Start Match (e.g., typing "How" puts "How Great" first)
+            const aStarts = aTitle.startsWith(term);
+            const bStarts = bTitle.startsWith(term);
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            
+            // Priority 2: Alphabetical fallback
+            return aTitle.localeCompare(bTitle);
+        });
+
+        // 3. Build the UI for the suggestions
+        if (results.length === 0) {
+            searchSuggestions.innerHTML = `<div class="p-4 text-sm font-bold text-center" style="color: var(--text-muted)">No matches found</div>`;
+        } else {
+            // Only show the top 15 results to keep it fast and clean
+            searchSuggestions.innerHTML = results.slice(0, 15).map(s => `
+                <div class="suggestion-item p-3 border-b cursor-pointer transition flex justify-between items-center hover:bg-blue-500/10" data-id="${s.id}" style="border-color: var(--border)">
+                    <span class="font-bold text-sm" style="color: var(--text)">${escapeHtml(s.title || 'Untitled')}</span>
+                    <span class="text-[10px] uppercase tracking-wider font-bold" style="color: var(--text-muted)">${escapeHtml(s.artist || '')}</span>
+                </div>
+            `).join('');
+        }
+        
+        searchSuggestions.classList.remove('hidden');
+    });
+
+// 4. Handle clicking a suggestion
+    searchSuggestions.addEventListener('click', (e) => {
+        const item = e.target.closest('.suggestion-item');
+        if (item) {
+            const songId = item.dataset.id;
+            loadSongById(songId); 
+            
+            // Clean up UI
+            searchInput.value = ''; 
+            searchInput.blur(); 
+            searchSuggestions.classList.add('hidden');
+
+            // 🎯 THE FIX: Rebuild the full list since the search bar is now empty
+            populateDropdown(); 
+
+            // 🔄 SYNCS THE DROPDOWN WITH YOUR NEWLY SELECTED SONG
+            if(songSelect) songSelect.value = songId; 
+        }
+    });
+
+    // 5. Hide suggestions when clicking outside the box
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            searchSuggestions.classList.add('hidden');
+        }
+    });
+}
+
+
+// Local-only arrangement (Does NOT write to Firebase)
+saveSetlistBtn.addEventListener('click', () => {
+    // 1. Update Local Memory instantly
+    playlist = playlistDraft.slice(); 
+    try { localStorage.setItem(PLAYLIST_KEY, JSON.stringify(playlist)); } catch(e){}
+    
+    // 2. Refresh UI
+    normalizePlaylist(); 
+    populateDropdown();
+    
+    // 3. Navigate if needed
+    if(currentId && !playlist.includes(currentId)) currentId = playlist[0] || null;
+    if(currentId) loadSongById(currentId); 
+    
+    // 4. Show local success
+    setSyncStatus('Saved Locally for this Device', null);
+    setTimeout(() => setSyncStatus(''), 2000);
+    
+    closeSetlistModal();
+});
+
+songSelect.addEventListener('change', (e) => { loadSongById(e.target.value); populateDropdown(); });
+document.getElementById('prevSongBtn').addEventListener('click', () => { const idx = playlist.indexOf(currentId); if(idx > 0) loadSongById(playlist[idx-1]); populateDropdown(); });
+document.getElementById('nextSongBtn').addEventListener('click', () => { const idx = playlist.indexOf(currentId); if(idx < playlist.length - 1) loadSongById(playlist[idx+1]); populateDropdown(); });
+gearBtn.addEventListener('click', (e) => { e.stopPropagation(); const isOpen = !gearPanel.classList.contains('hidden'); if(isOpen) gearPanel.classList.add('hidden'); else gearPanel.classList.remove('hidden'); });
+document.getElementById('closeBtn').addEventListener('click', ()=>{ gearPanel.classList.add('hidden'); });
+keyDisplayBtn.addEventListener('click', (e) => { e.stopPropagation(); gearPanel.classList.remove('hidden'); });
+window.addEventListener('click', (e) => { if (!gearPanel.classList.contains('hidden')) { if (!gearPanel.contains(e.target) && e.target !== gearBtn && !gearBtn.contains(e.target) && !keyDisplayBtn.contains(e.target)) { gearPanel.classList.add('hidden'); } } });
+
+// --- MERGED PRINT LOGIC (FIXED CHORD & CONTROLS) ---
+const printOverlay = document.getElementById('printOverlay');
+const onePageToggle = document.getElementById('onePageToggle');
+const pageBox = document.getElementById('pageBox');
+const scrollBox = document.getElementById('scrollBox');
+const printWrap = document.getElementById('printWrap');
+const printReaderPage = document.getElementById('printReaderPage');
+const printReaderScroll = document.getElementById('printReaderScroll');
+
+let onePageEnabled = false;
+let printFontSize = 12; // Initial Pt
+let printCols = 1; // Initial Cols
+
+// Open Print View
+document.getElementById('openPrintBtn').addEventListener('click', () => {
+    gearPanel.classList.add('hidden'); // Close gear menu
+    
+    // Sync initial state
+    const settings = getSongSettings(currentId) || {};
+    printFontSize = Number(settings.fontSize || 12);
+    printCols = Number(settings.columns || 1);
+    
+    renderPrintView();
+    printOverlay.classList.add('open');
+});
+
+window.closePrintView = () => {
+    printOverlay.classList.remove('open');
+};
+
+window.triggerNativePrint = () => {
+    window.print();
+};
+
+// --- INTERACTIVE PRINT CONTROLS ---
+// --- 🆕 PRINT VIEW NAVIGATION ---
+window.printPrevSong = () => {
+    const idx = playlist.indexOf(currentId);
+    if(idx > 0) {
+        loadSongById(playlist[idx-1]);
+        populateDropdown();
+        renderPrintView();
+    }
+};
+
+window.printNextSong = () => {
+    const idx = playlist.indexOf(currentId);
+    if(idx > -1 && idx < playlist.length - 1) {
+        loadSongById(playlist[idx+1]);
+        populateDropdown();
+        renderPrintView();
+    }
+};
+
+window.adjustPrintFont = (delta) => {
+    printFontSize = Math.max(8, Math.min(24, printFontSize + delta));
+    renderPrintView(); // Re-render to apply
+};
+
+window.cyclePrintCols = () => {
+    printCols++;
+    if(printCols > 3) printCols = 1;
+    renderPrintView();
+};
+
+if(onePageToggle) {
+    onePageToggle.addEventListener('change', () => {
+        onePageEnabled = !!onePageToggle.checked;
+        applyPreviewMode();
+    });
+}
+
+function renderPrintView() {
+    const song = window.allSongs.find(s => s.id === currentId);
+    
+    // Update Button States
+    const idx = playlist.indexOf(currentId);
+    const prevBtn = document.getElementById('printPrevBtn');
+    const nextBtn = document.getElementById('printNextBtn');
+    if (prevBtn) {
+        prevBtn.disabled = (idx <= 0);
+        prevBtn.style.opacity = (idx <= 0) ? '0.4' : '1';
+        prevBtn.style.cursor = (idx <= 0) ? 'not-allowed' : 'pointer';
+    }
+    if (nextBtn) {
+        nextBtn.disabled = (idx < 0 || idx >= playlist.length - 1);
+        nextBtn.style.opacity = (idx < 0 || idx >= playlist.length - 1) ? '0.4' : '1';
+        nextBtn.style.cursor = (idx < 0 || idx >= playlist.length - 1) ? 'not-allowed' : 'pointer';
+    }
+
+    if(!song) {
+        document.getElementById('phTitleMain').textContent = "No Song Selected";
+        return;
+    }
+
+    const settings = getSongSettings(currentId) || {};
+    const semitones = Number(settings.transpose || 0);
+
+    const songKey = song.key || guessOriginalKeyFromContent(song.content) || 'C';
+    let targetKeyName = settings.chosenKey;
+    if (!targetKeyName) {
+         targetKeyName = (semitones === 0) ? songKey : transposeRoot(songKey, semitones, 'C');   // FIX: same as the reader (was always C) 
+    }
+
+    document.getElementById('phKeyEl').textContent = targetKeyName;
+    document.getElementById('phFontEl').textContent = printFontSize + 'pt';
+    document.getElementById('phColsEl').textContent = onePageEnabled ? "Auto" : printCols;
+
+    const transText = semitones === 0 ? '' : (semitones > 0 ? `+${semitones}` : `${semitones}`);
+    document.getElementById('printTitlePage').textContent = song.title;
+    document.getElementById('printSubPage').textContent = `${song.artist || ''} • Key: ${targetKeyName} ${transText}`;
+
+    const htmlWithSpans = highlightHtml(song.content || '', targetKeyName, semitones);
+    
+    // 🧠 THE SAFE SMART CUT: Line-by-Line, but glue chords to lyrics!
+    const lines = htmlWithSpans.split(/\n/);
+    let htmlWithDivs = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i] || ' ';
+        let inlineStyle = "margin-bottom: 0.2em; break-inside: avoid; page-break-inside: avoid;";
+        
+        // If this line has a Chord or a Section Label, glue it to the next line!
+        if (line.includes('class="chord"') || line.includes('class="section-label"')) {
+            inlineStyle += " break-after: avoid; page-break-after: avoid;";
+        }
+        
+        htmlWithDivs += `<div class="reader-line" style="${inlineStyle}">${line}</div>`;
+    }
+    
+    printReaderPage.innerHTML = htmlWithDivs;
+    printReaderScroll.innerHTML = htmlWithDivs;
+
+    document.documentElement.style.setProperty('--print-text-size', printFontSize + 'pt');
+    document.documentElement.style.setProperty('--print-chord-size', (printFontSize + 2) + 'pt');
+    document.documentElement.style.setProperty('--print-col-gap', '40px');
+
+    applyPreviewMode();
+}
+
+function applyPreviewMode() {
+    printWrap.classList.remove('cols1','cols2','cols3', 'onepage');
+    
+    if(onePageEnabled) {
+        pageBox.style.display = 'block';
+        scrollBox.style.display = 'none';
+        printWrap.classList.add('onepage');
+        fitToOnePage(); // Auto-scale logic
+    } else {
+        pageBox.style.display = 'none';
+        scrollBox.style.display = 'block';
+        
+        printWrap.classList.add(printCols === 2 ? 'cols2' : printCols === 3 ? 'cols3' : 'cols1');
+        
+        printReaderPage.style.transform = '';
+        printReaderPage.style.width = '';
+    }
+}
+
+function fitToOnePage() {
+    const root = document.documentElement;
+    let textPt = parseFloat(getComputedStyle(root).getPropertyValue('--print-text-size')) || 14;
+    let chordPt = parseFloat(getComputedStyle(root).getPropertyValue('--print-chord-size')) || 17;
+    let line = 1.35;
+    let gap = 40;
+
+    printReaderPage.style.transform = '';
+    printReaderPage.style.width = '';
+
+    for(let steps=0; steps<50; steps++){ 
+        const contentH = printReaderPage.scrollHeight;
+        const pageH = pageBox.clientHeight - 60; 
+
+        if(contentH <= pageH) break;
+
+        if(line > 1.12) { line -= 0.02; root.style.setProperty('--print-line-height', String(line)); continue; }
+        if(gap > 18) { gap -= 2; root.style.setProperty('--print-col-gap', gap + 'px'); continue; }
+        if(textPt > 9) { 
+            textPt -= 0.5; chordPt -= 0.5; 
+            root.style.setProperty('--print-text-size', textPt + 'pt'); 
+            root.style.setProperty('--print-chord-size', chordPt + 'pt'); 
+            continue; 
+        }
+        
+        const currentScale = parseFloat((printReaderPage.style.transform || '').replace(/[^0-9.]/g,'')) || 1;
+        if(currentScale > 0.82){ 
+            const next = Math.max(0.82, currentScale - 0.03); 
+            printReaderPage.style.transformOrigin = 'top left';
+            printReaderPage.style.transform = 'scale(' + next.toFixed(2) + ')'; 
+            printReaderPage.style.width = (100/next).toFixed(2) + '%'; 
+            continue; 
+        } 
+        break;
+    }
+}
+
+const attach = (selector, fn) => { document.querySelectorAll(selector).forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); fn(e); })); };
+attach('#colsToggleBtn, .cols-toggle-mobile', toggleColumns);
+attach('#themeToggleBtn', () => { const isLight = document.body.classList.contains('light'); applyTheme(isLight ? 'dark' : 'light'); });
+attach('#fontMinusBtn, .font-minus-mobile', () => applyFontSize(fontSizePx - 2));
+attach('#fontPlusBtn, .font-plus-mobile', () => applyFontSize(fontSizePx + 2));
+
+(function dockIdleFade(){
+  const dock = document.getElementById('floatDock'); const panel = document.getElementById('gearPanel'); if(!dock) return;
+  const IDLE_MS = 2500; let t = null;
+  function isPanelOpen(){ return panel && !panel.classList.contains('hidden'); }
+  function goIdle(){ if(isPanelOpen()) return; dock.style.opacity = '0.3'; }
+  function wake(){ dock.style.opacity = '1'; clearTimeout(t); t = setTimeout(goIdle, IDLE_MS); }
+  const opts = { passive: true }; window.addEventListener('mousemove', wake, opts); window.addEventListener('scroll', wake, opts); window.addEventListener('touchstart', wake, opts); window.addEventListener('click', wake, opts); wake();
+})();
+
+function initNavigationControls() {
+  document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('setlistModal'); if (modal && !modal.classList.contains('hidden')) return;
+    if (e.key === 'ArrowLeft') { document.getElementById('prevSongBtn').click(); } 
+    else if (e.key === 'ArrowRight') { document.getElementById('nextSongBtn').click(); } 
+    else if (e.key === '+' || e.key === '=') { applyFontSize(fontSizePx + 2); } 
+    else if (e.key === '-') { applyFontSize(fontSizePx - 2); }
+  });
+  let touchStartX = 0; let touchStartY = 0; let initialPinchDistance = null; let initialFontSize = null; const SWIPE_THRESHOLD = 50; 
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; } 
+    else if (e.touches.length === 2) { initialPinchDistance = getDistance(e.touches[0], e.touches[1]); initialFontSize = fontSizePx; }
+  }, {passive: true});
+  document.addEventListener('touchend', (e) => {
+    const modal = document.getElementById('setlistModal'); if (modal && !modal.classList.contains('hidden')) return;
+    if (e.changedTouches.length === 1 && e.touches.length === 0) { const touchEndX = e.changedTouches[0].screenX; const touchEndY = e.changedTouches[0].screenY; handleSwipeGesture(touchStartX, touchStartY, touchEndX, touchEndY); }
+    if (e.touches.length < 2) { initialPinchDistance = null; }
+  }, {passive: true});
+  document.addEventListener('touchmove', (e) => {
+     if (e.touches.length === 2 && initialPinchDistance && initialFontSize) {
+         const currentDist = getDistance(e.touches[0], e.touches[1]); const diff = currentDist - initialPinchDistance; const step = 20; const changes = Math.floor(diff / step);
+         if (changes !== 0) { const newSize = initialFontSize + (changes * 2); applyFontSize(newSize); }
+     }
+  }, {passive: true});
+  function getDistance(t1, t2) { const dx = t1.screenX - t2.screenX; const dy = t1.screenY - t2.screenY; return Math.sqrt(dx * dx + dy * dy); }
+  function handleSwipeGesture(startX, startY, endX, endY) {
+    const diffX = endX - startX; const diffY = endY - startY;
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > SWIPE_THRESHOLD) { if (diffX > 0) { document.getElementById('prevSongBtn').click(); } else { document.getElementById('nextSongBtn').click(); } }
+  }
+}
+
+async function init(){
+  buildKeyButtons();
+  try{ const savedCols = localStorage.getItem(COLS_PREF_KEY) || '1'; applyColumns(savedCols === '2' ? 2 : 1); }catch(e){ applyColumns(1); }
+  try{ const savedTheme = (localStorage.getItem(THEME_PREF_KEY) || 'dark').toLowerCase(); applyTheme(savedTheme === 'light' ? 'light' : 'dark'); }catch(e){ applyTheme('dark'); }
+
+  // We start empty, Firebase will fill this instantly!
+  window.allSongs = [];
+  playlist = [];
+  currentId = localStorage.getItem(CURRENT_ID_KEY) || null;
+
+  initNavigationControls();
+}
+
+window.addEventListener('load', init);
+</script> 
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // 🆕 YOUR NEW PERSONAL FIREBASE CREDENTIALS
+    const firebaseConfig = {
+        apiKey: "AIzaSyAc91Q5P-BdXbI_thaR5dpEKWP2dGW2rIM",
+        authDomain: "kingofright-4a3cc.firebaseapp.com",
+        databaseURL: "https://kingofright-4a3cc-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "kingofright-4a3cc",
+        storageBucket: "kingofright-4a3cc.firebasestorage.app",
+        messagingSenderId: "585292604478",
+        appId: "1:585292604478:web:284d5abe9942413d925d6f",
+        measurementId: "G-CYJVD7QJSJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    console.log("🎸 Personal Reader Mode Activated!");
+
+    // 1. SIMPLE LIBRARY FETCH
+    // Since this is your personal DB, we just grab everything instantly. No complex rules needed.
+    onValue(ref(db, 'library/songs'), (snapshot) => {
+        const data = snapshot.val();
+        if(data) {
+            console.log("🔥 Personal Firebase: Library Synced!");
+            
+            // Format the data for the Reader UI
+            const songsArray = {};
+            Object.keys(data).forEach(key => {
+                songsArray[key] = data[key];
+                songsArray[key].id = key; 
+            });
+            
+            // Push to UI
+            if(window.updatePublicLibrary) {
+                window.updatePublicLibrary(songsArray);
+            }
+        } else {
+            console.log("⚠️ No songs found in Personal Firebase.");
+            if(window.updatePublicLibrary) window.updatePublicLibrary({});
+        }
+    });
+
+    // NOTE: We completely removed the 'live_edit' and 'arrange_songs' listeners.
+    // Your Arrangement Modal will now automatically save and load setlists directly
+    // to your phone/computer's local memory using the existing local storage logic!
+</script>
+
+<script>
+/* Accent colour dots (same saved choice as the other Worship tools). Separate from the reader script on purpose. */
+(function () {
+    var root = document.documentElement;
+    function mark(t) { document.querySelectorAll('#accentSwitch .theme-dot').forEach(function (b) { b.classList.toggle('active', b.dataset.theme === t); }); }
+    mark(root.getAttribute('data-theme') || 'indigo');
+    document.getElementById('accentSwitch').addEventListener('click', function (e) {
+        var b = e.target.closest('.theme-dot'); if (!b) return;
+        root.setAttribute('data-theme', b.dataset.theme); mark(b.dataset.theme);
+        try { localStorage.setItem('worship-theme', b.dataset.theme); } catch (err) {}
+    });
+})();
+</script>
+
+</body>
+</html>
