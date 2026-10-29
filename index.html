@@ -288,8 +288,12 @@
       .family-chord { font-size: 12px; }
       #statusOverlay { top: 68px; }
     }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
-
+@media (prefers-reduced-motion: reduce) { 
+  *, *::before, *::after { 
+    animation-duration: 4s !important; 
+    transition-duration: 0.3s !important; 
+  } 
+}
     /* --- ISOLATED PRINT VIEW STYLES (Does not affect Reader) --- */
     #printOverlay {
         position: fixed; inset: 0; z-index: 2000;
